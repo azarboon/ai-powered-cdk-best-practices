@@ -5,33 +5,35 @@ This CDK application monitors the azarboon/dummy GitHub repository for new commi
 ## TODO:
 
 Use the new prompt to see if things are still working. Then commit.
+Add these prompts as rules to always be consdered. Maybe using @file to include specific files you were working on. Referencing your README (which contains your project prompt)
+
 Configure Step Functions Lambda to invoke an SNS and notify me of commit differences.
 
 ## Prompt
 
-Always use the bare minimum configurations to avoid bloating the code.
-Strive to follow best practices (only from the official AWS documentation) when configuring services.
-Always follow security best practices (only from the official AWS documentation) and always grant least privileged access.
-Use minimal IAM permissions in CDK roles and policies.
-Comment all code blocks and each file, explaining their purpose.
-Every time the Webhook URL changes (and only after it changes), provide the updated version so I can update the GitHub webhook configuration.
-Make sure only the necessary files and folders are committed to Git; gitignore the rest.
-Make sure no credentials, secrets, or environment variables containing secrets are committed to Git.
-Don't change these three sections in the README: the first section, TODO, and Prompt.
-Always use stable versions of packages, preferably the latest stable version. Never use beta or unstable versions.
-Always use packages from official accounts or verified sources.
-Follow consistent naming conventions and code formatting.
-Include clear setup instructions if new dependencies or configurations are added.
-Validate and lint the code before finalizing changes. Always include ESLint with TypeScript rules and ensure all code passes linting before committing.
-Ensure all resources created have appropriate tagging for cost tracking and ownership. Use environment variables; you can use env=dev as the default tag and its associated value.
-Do not hard-code any secrets; instead, use AWS Parameter Store.
-Deploy everything in the us-east-1 region. AWS account user name is "cloud_user"
-Always use CDK to modify infrastructure. Avoid making manual changes in the AWS console to resources managed by CDK, as this can cause drift and deployment failures.
-Always run `cdk synth` to check for errors and review the generated CloudFormation templates. This helps ensure code quality and prevents deploying unintended changes.
-Always keep the architecture diagram in the README updated and high level. Ensure arrows accurately show component interactions. Size it to fit a page without scrolling, and keep all elements consistent. 
+- Always use the bare minimum configurations to avoid bloating the code.
+- Strive to follow best practices (only from the official AWS documentation) when configuring services.
+- Always follow security best practices (only from the official AWS documentation) and grant least privileged access.
+- Use minimal IAM permissions in CDK roles and policies.
+- Comment all code blocks and each file, explaining their purpose.
+- Every time the Webhook URL changes (and only after it changes), provide the updated version so I can update the GitHub webhook configuration.
+- Make sure only the necessary files and folders are committed to Git; gitignore the rest.
+- Make sure no credentials, secrets, or environment variables containing secrets are committed to Git.
+- Don't change these three sections in the README: the first section, TODO, and Prompt.
+- Always use stable versions of packages, preferably the latest stable version. Never use beta or unstable versions.
+- Always use packages from official accounts or verified sources.
+- Follow consistent naming conventions and code formatting.
+- Include clear setup instructions if new dependencies or configurations are added.
+- Validate and lint the code before finalizing changes. Always include ESLint with TypeScript rules and ensure all code passes linting before committing.
+- Ensure all resources created have appropriate tagging for cost tracking and ownership. Use environment variables; you can use `env=dev` as the default tag and its associated value.
+- Do not hard-code any secrets; instead, use AWS Parameter Store.
+- Deploy everything in the us-east-1 region. The AWS account username is "cloud_user." Ask me in a safe and secure way to provide the account ID and credentials so you can deploy the stack in AWS.
+- Always use CDK to modify infrastructure. Avoid making manual changes in the AWS console to resources managed by CDK, as this can cause drift and deployment failures.
+- Always run `cdk synth` to check for errors and review the generated CloudFormation templates. This helps ensure code quality and prevents deploying unintended changes.
+- Always keep the architecture diagram in the README updated and high level. Ensure arrows accurately show component interactions. Size it to fit a page without scrolling, and keep all elements consistent.
+- Repostory for this project is 
 
-AWS account:
-Account id: *****
+
 
 
 
