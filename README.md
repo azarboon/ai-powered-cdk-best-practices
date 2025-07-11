@@ -11,7 +11,7 @@ Configure Step Functions Lambda to invoke an SNS and notify me of commit differe
 
 Always use the bare minimum configurations to avoid bloating the code.
 Strive to follow best practices (only from the official AWS documentation) when configuring services.
-Always follow security best practices and grant least privileged access.
+Always follow security best practices (only from the official AWS documentation) and always grant least privileged access.
 Use minimal IAM permissions in CDK roles and policies.
 Comment all code blocks and each file, explaining their purpose.
 Every time the Webhook URL changes (and only after it changes), provide the updated version so I can update the GitHub webhook configuration.
@@ -27,7 +27,8 @@ Ensure all resources created have appropriate tagging for cost tracking and owne
 Do not hard-code any secrets; instead, use AWS Parameter Store.
 Deploy everything in the us-east-1 region. AWS account user name is "cloud_user"
 Always use CDK to modify infrastructure. Avoid making manual changes in the AWS console to resources managed by CDK, as this can cause drift and deployment failures.
-Always run cdk synth to check for errors and review the generated CloudFormation templates. This helps ensure code quality and prevents deploying unintended changes.
+Always run `cdk synth` to check for errors and review the generated CloudFormation templates. This helps ensure code quality and prevents deploying unintended changes.
+Always keep the architecture diagram in the README updated and high level. Ensure arrows accurately show component interactions. Size it to fit a page without scrolling, and keep all elements consistent. 
 
 AWS account:
 Account id: *****
