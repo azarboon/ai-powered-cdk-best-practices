@@ -9,14 +9,25 @@ Configure Step Functions Lambda to invoke an SNS and notify me of commit differe
 
 ## Prompt
 
-Always use the bare minimum configurations to avoid bloating the code. 
-Always follow security best practices, and always grant least privileged access. 
-Comment the all code blocks as well as each file, explaining their purpose. Every time the Webhook URL changes (and only after it changes), give me the updated version so I can update the GitHub webhook configuration. 
-Make sure only the necessary files and folders are committed to Git; gitignore the rest. 
-Make sure no credentials are committed to Git. 
-Don't change these three sections in README: the first section, TODO, Prompt.
-Always use stable version of packages preferably the latest stable version. Never use beta or unstable versions.
-Always use packages from offcial accounts.
+Always use the bare minimum configurations to avoid bloating the code.
+Strive to follow best practices (only from the official AWS documentation) when configuring services.
+Always follow security best practices and grant least privileged access.
+Use minimal IAM permissions in CDK roles and policies.
+Comment all code blocks and each file, explaining their purpose.
+Every time the Webhook URL changes (and only after it changes), provide the updated version so I can update the GitHub webhook configuration.
+Make sure only the necessary files and folders are committed to Git; gitignore the rest.
+Make sure no credentials, secrets, or environment variables containing secrets are committed to Git.
+Don't change these three sections in the README: the first section, TODO, and Prompt.
+Always use stable versions of packages, preferably the latest stable version. Never use beta or unstable versions.
+Always use packages from official accounts or verified sources.
+Follow consistent naming conventions and code formatting.
+Include clear setup instructions if new dependencies or configurations are added.
+Validate and lint the code before finalizing changes. Always include ESLint with TypeScript rules and ensure all code passes linting before committing.
+Ensure all resources created have appropriate tagging for cost tracking and ownership. Use environment variables; you can use env=dev as the default tag and its associated value.
+Do not hard-code any secrets; instead, use AWS Parameter Store.
+Deploy everything in the us-east-1 region. AWS account user name is "cloud_user"
+Always use CDK to modify infrastructure. Avoid making manual changes in the AWS console to resources managed by CDK, as this can cause drift and deployment failures.
+Always run cdk synth to check for errors and review the generated CloudFormation templates. This helps ensure code quality and prevents deploying unintended changes.
 
 AWS account:
 Account id: *****
@@ -27,6 +38,81 @@ Account id: *****
 
 ```
 GitHub Webhook → API Gateway → Lambda (Webhook Receiver) → EventBridge → Step Functions → Lambda (README Reader) → GitHub API
+```
+
+## 📊 Detailed Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           GitHub Repository Monitor                              │
+│                          Amazon Q Integration App                               │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐     HTTPS POST      ┌──────────────────┐     Invoke
+│   GitHub Repo   │────────────────────▶│   API Gateway    │─────────────┐
+│  azarboon/dummy │     Webhook         │     (REST)       │             │
+│                 │                     │  /prod/webhook   │             │
+└─────────────────┘                     └──────────────────┘             │
+                                                                         ▼
+┌─────────────────┐                                           ┌─────────────────┐
+│  GitHub API     │                                           │ Webhook Receiver│
+│   (REST API)    │                                           │    Lambda       │
+│                 │                                           │                 │
+│ GET /repos/     │                                           │ • Validate Event│
+│ {owner}/{repo}/ │                                           │ • Filter Repo   │
+│ contents/README │                                           │ • Transform Data│
+└─────────────────┘                                           └─────────────────┘
+         ▲                                                             │
+         │                                                             │
+         │ HTTP GET                                                    │ Put Event
+         │                                                             ▼
+┌─────────────────┐     Invoke          ┌──────────────────┐    ┌─────────────────┐
+│ README Reader   │◀────────────────────│ Step Functions  │◀───│   EventBridge   │
+│    Lambda       │                     │ State Machine   │    │   Custom Bus    │
+│                 │                     │                 │    │                 │
+│ • Fetch README  │                     │ • Orchestrate   │    │ • Route Events  │
+│ • Process Data  │                     │ • Error Handle  │    │ • Filter Rules  │
+│ • Log Results   │                     │ • Retry Logic   │    │ • Event Pattern │
+└─────────────────┘                     └──────────────────┘    └─────────────────┘
+         │                                       │                       │
+         │                                       │                       │
+         ▼                                       ▼                       ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            CloudWatch Logs                                      │
+│                                                                                 │
+│  ┌─────────────────┐  ┌──────────────────┐  ┌─────────────────────────────────┐ │
+│  │ Webhook Receiver│  │ Step Functions   │  │ README Reader Lambda            │ │
+│  │ Lambda Logs     │  │ Execution Logs   │  │ Logs                            │ │
+│  │                 │  │                  │  │                                 │ │
+│  │ • Event Details │  │ • State Changes  │  │ • API Responses                 │ │
+│  │ • Filtering     │  │ • Error Handling │  │ • Content Preview               │ │
+│  │ • Transforming  │  │ • Retry Attempts │  │ • Processing Results            │ │
+│  └─────────────────┘  └──────────────────┘  └─────────────────────────────────┘ │
+│                                                                                 │
+│                        Retention: 1 Week                                       │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              Data Flow                                          │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+1. 📤 GitHub Push Event → Webhook POST to API Gateway
+2. 🔍 API Gateway → Webhook Receiver Lambda (validate & filter)
+3. 📨 Webhook Lambda → EventBridge (custom event)
+4. 🎯 EventBridge → Step Functions (event routing)
+5. 🚀 Step Functions → README Reader Lambda (orchestrated execution)
+6. 📖 README Lambda → GitHub API (fetch README content)
+7. 📊 All Components → CloudWatch Logs (centralized logging)
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            Security & Filtering                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+🔒 Repository Filter: Only processes "azarboon/dummy"
+🔒 Event Filter: Only processes "push" events (ignores ping, issues, etc.)
+🔒 IAM Roles: Least privilege access for each component
+🔒 No Credentials: Uses IAM roles, no hardcoded secrets
+🔒 Secure Logging: No sensitive data in logs
 ```
 
 ### Components
