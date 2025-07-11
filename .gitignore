@@ -1,5 +1,5 @@
 # =============================================================================
-# AWS CDK GitHub Repository Monitor - .gitignore
+# AWS CDK Repository Monitor - .gitignore
 # Purpose: Exclude build artifacts, credentials, and temporary files from Git
 # Security: Prevents accidental credential commits
 # =============================================================================

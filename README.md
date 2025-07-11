@@ -4,19 +4,23 @@ This CDK application monitors the azarboon/dummy GitHub repository for new commi
 
 ## TODO:
 
-install aws cdk and aws cli in wsl termnial.  Then lets q cli to deploy and test the app being dpeloyed
+Use the new prompt to see if things are still working. Then commit.
+Configure Step Functions Lambda to invoke an SNS and notify me of commit differences.
 
 ## Prompt
 
-Always use the bare minimum configurations to avoid bloating the code. Always follow security best practices, and always grant least privileged access. Comment the all code blocks as well as each file, explaining their purpose. Every time the Webhook URL changes (and only after it changes), give me the updated version so I can update the GitHub webhook configuration. Make sure only the necessary files and folders are committed to Git; gitignore the rest. Make sure no credentials are committed to Git. Don't change these three sections in README: TODO, Prompt and Repository Monitor
+Always use the bare minimum configurations to avoid bloating the code. 
+Always follow security best practices, and always grant least privileged access. 
+Comment the all code blocks as well as each file, explaining their purpose. Every time the Webhook URL changes (and only after it changes), give me the updated version so I can update the GitHub webhook configuration. 
+Make sure only the necessary files and folders are committed to Git; gitignore the rest. 
+Make sure no credentials are committed to Git. 
+Don't change these three sections in README: the first section, TODO, Prompt.
+Always use stable version of packages preferably the latest stable version. Never use beta or unstable versions.
+Always use packages from offcial accounts.
 
 AWS account:
-
-Region: us-east-1
-
 Account id: *****
 
-username: cloud_user
 
 
 ## 🏗️ Architecture Overview
