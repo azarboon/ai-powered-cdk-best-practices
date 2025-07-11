@@ -1,0 +1,203 @@
+# Repository Monitor
+
+This CDK application monitors the azarboon/dummy GitHub repository for new commits and reads the content of its README file. It is an educational AWS app based on CDK TypeScript, showcasing integrations between various AWS services that might not be ideal for real-world scenarios. This project was created using the Amazon Q CLI.
+
+## TODO:
+
+install aws cdk and aws cli in wsl termnial.  Then lets q cli to deploy and test the app being dpeloyed
+
+## Prompt
+
+Always use the bare minimum configurations to avoid bloating the code. Always follow security best practices, and always grant least privileged access. Comment the all code blocks as well as each file, explaining their purpose. Every time the Webhook URL changes (and only after it changes), give me the updated version so I can update the GitHub webhook configuration. Make sure only the necessary files and folders are committed to Git; gitignore the rest. Make sure no credentials are committed to Git. Don't change these three sections in README: TODO, Prompt and Repository Monitor
+
+AWS account:
+
+Region: us-east-1
+
+Account id: *****
+
+username: cloud_user
+
+
+## 🏗️ Architecture Overview
+
+```
+GitHub Webhook → API Gateway → Lambda (Webhook Receiver) → EventBridge → Step Functions → Lambda (README Reader) → GitHub API
+```
+
+### Components
+
+- **API Gateway**: Receives GitHub webhook POST requests
+- **Webhook Receiver Lambda**: Transforms GitHub events to EventBridge events
+- **EventBridge**: Routes filtered push events to Step Functions
+- **Step Functions**: Orchestrates the README reading workflow
+- **README Reader Lambda**: Fetches README content from GitHub API
+- **CloudWatch Logs**: Centralized logging with 1-week retention
+
+## 🔒 Security Features
+
+- **Least Privilege IAM**: All roles have minimal required permissions
+- **Repository Filtering**: Only processes events from `azarboon/dummy`
+- **Event Type Filtering**: Only processes push events (ignores ping, issues, etc.)
+- **No Hardcoded Credentials**: Uses IAM roles and environment variables
+- **Secure Logging**: No sensitive data or full content in logs
+- **Request Timeouts**: Prevents hanging requests and runaway costs
+- **Resource Scoping**: IAM policies target specific resources where possible
+
+## 💰 Cost Optimization
+
+- **Minimal Configuration**: 256MB memory, 30s timeouts
+- **Pay-per-Use Services**: EventBridge, Step Functions, API Gateway
+- **Log Retention**: 1-week retention to control storage costs
+- **Early Returns**: Webhook receiver exits early for ignored events
+- **Efficient Processing**: No unnecessary data processing or storage
+
+## 📋 Prerequisites
+
+1. **Node.js 18+** and npm
+2. **AWS CLI** configured with your credentials
+3. **AWS CDK CLI** installed (`npm install -g aws-cdk`)
+4. **GitHub Repository Access** to `azarboon/dummy` for webhook configuration
+
+## 🚀 Deployment
+
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+### 2. Bootstrap CDK (first time only)
+```bash
+cdk bootstrap aws://381492315817/us-east-1
+```
+
+### 3. Build and Deploy
+```bash
+npm run build
+cdk deploy
+```
+
+### 4. Note the Webhook URL
+After deployment, copy the `WebhookUrl` from the output:
+```
+GitHubMonitorStack.WebhookUrl = https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod/webhook
+```
+
+## 🔗 GitHub Webhook Configuration
+
+### 1. Navigate to Repository Settings
+Go to: `https://github.com/azarboon/dummy/settings/hooks`
+
+### 2. Add Webhook
+- **Payload URL**: Use the `WebhookUrl` from deployment output
+- **Content type**: `application/json`
+- **Secret**: Leave empty (optional for additional security)
+- **Events**: Select "Just the push event"
+- **Active**: ✅ Enabled
+
+### 3. Test the Webhook
+Make a commit to the repository and verify webhook delivery in GitHub settings.
+
+## 📊 Monitoring
+
+### CloudWatch Log Groups
+- **Webhook Receiver**: `/aws/lambda/GitHubMonitorStack-WebhookReceiverFunction*`
+- **README Reader**: `/aws/lambda/GitHubMonitorStack-ReadmeReaderFunction*`
+- **Step Functions**: `/aws/stepfunctions/GitHubMonitorStateMachine`
+
+### What You'll See in Logs
+- ✅ **Webhook Processing**: Repository info, commit count, event filtering
+- ✅ **README Fetching**: Content preview (first 100 chars), content length
+- ❌ **NOT Logged**: Full commit diffs, complete README content (security)
+
+## 🧪 Manual Testing
+
+### Test Step Function Directly
+1. Go to **AWS Step Functions Console**
+2. Find `GitHubMonitorStateMachine`
+3. **Start Execution** with sample input:
+```json
+{
+  "repository": {
+    "full_name": "azarboon/dummy"
+  },
+  "commits": [
+    {
+      "id": "test-commit-id",
+      "message": "Test commit"
+    }
+  ]
+}
+```
+
+### Test Webhook Endpoint
+```bash
+curl -X POST https://your-webhook-url/webhook \
+  -H "Content-Type: application/json" \
+  -H "X-GitHub-Event: push" \
+  -d '{"repository":{"full_name":"azarboon/dummy"},"commits":[{"id":"test"}]}'
+```
+
+## 🗂️ Project Structure
+
+```
+├── bin/
+│   └── app.ts              # CDK app entry point
+├── lib/
+│   └── github-monitor-stack.ts  # Main CDK stack definition
+├── lambda/
+│   ├── index.js            # README reader Lambda function
+│   └── webhook-receiver.js # GitHub webhook receiver Lambda
+├── cdk.json               # CDK configuration
+├── package.json           # Dependencies and scripts
+└── README.md             # This file
+```
+
+## 🔧 Development Guidelines
+
+### Code Quality
+- **Minimal Configuration**: Avoid unnecessary complexity
+- **Comprehensive Comments**: Every component and function documented
+- **Security First**: Least privilege access, no credential exposure
+- **Cost Conscious**: Efficient resource usage and retention policies
+
+### Deployment Process
+- Always run `npm run build` before deployment
+- Use `cdk deploy --require-approval never` for automated deployments
+- Update GitHub webhook URL after each deployment if changed
+- Monitor CloudWatch logs for successful operation
+
+## 🧹 Cleanup
+
+To remove all resources and avoid ongoing costs:
+```bash
+cdk destroy
+```
+
+This will delete:
+- All Lambda functions
+- API Gateway
+- Step Functions
+- EventBridge rules
+- CloudWatch log groups
+- IAM roles and policies
+
+## 🚨 Important Notes
+
+- **No Credentials in Git**: This project contains no hardcoded credentials
+- **Account Specific**: Hardcoded to account `381492315817` for security
+- **Repository Specific**: Only monitors `azarboon/dummy` repository
+- **Region Locked**: Deployed to `us-east-1` for optimal GitHub webhook performance
+- **Cost Effective**: Designed for minimal AWS costs with appropriate limits
+
+## 📞 Support
+
+For issues or questions:
+1. Check CloudWatch logs for error details
+2. Verify GitHub webhook delivery status
+3. Test Step Functions manually for debugging
+4. Review IAM permissions if access issues occur
+
+---
+
+**Created with Amazon Q CLI** - Following AWS best practices for security, cost optimization, and minimal configuration
