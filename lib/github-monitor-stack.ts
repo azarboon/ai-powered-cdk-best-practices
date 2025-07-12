@@ -1,8 +1,13 @@
 /**
  * GitHub Repository Monitor Stack
  * 
- * Purpose: Monitors the azarboon/dummy GitHub repository for new commits
+ * Purpose: Monitors any configured GitHub repository for new commits
  * and automatically sends git difference notifications via email using SNS.
+ * 
+ * Configuration: All settings managed via environment variables
+ * - Repository: Configurable via GITHUB_REPOSITORY env var
+ * - Email: Configurable via NOTIFICATION_EMAIL env var
+ * - Environment: Configurable via ENVIRONMENT env var (default: dev)
  * 
  * Architecture:
  * 1. API Gateway receives GitHub webhooks
@@ -15,6 +20,7 @@
  * 
  * Security: All components follow least privilege access principles
  * Cost: Minimal configuration with pay-per-use services and log retention
+ * Resource Tagging: All resources tagged for cost tracking and ownership
  */
 
 import * as cdk from 'aws-cdk-lib';
@@ -39,6 +45,35 @@ export class GitHubMonitorStack extends cdk.Stack {
     super(scope, id, props);
 
     // =============================================================================
+    // CONFIGURATION - Environment variables for flexible deployment
+    // =============================================================================
+
+    /**
+     * Configuration from Environment Variables
+     * Following AWS CDK best practices for configuration management
+     * 
+     * Required Environment Variables:
+     * - GITHUB_REPOSITORY: Target GitHub repository (format: owner/repo)
+     * - NOTIFICATION_EMAIL: Email address for SNS notifications
+     * 
+     * Optional Environment Variables:
+     * - GITHUB_API_BASE: GitHub API base URL (defaults to api.github.com)
+     * - ENVIRONMENT: Environment tag (defaults to 'dev')
+     */
+    const githubRepository = process.env.GITHUB_REPOSITORY || 'azarboon/dummy';
+    const notificationEmail = process.env.NOTIFICATION_EMAIL || 'm.azarboon@gmail.com';
+    const githubApiBase = process.env.GITHUB_API_BASE || 'https://api.github.com';
+    const environment = process.env.ENVIRONMENT || 'dev';
+
+    // Validate required configuration
+    if (!githubRepository.includes('/')) {
+      throw new Error('GITHUB_REPOSITORY must be in format "owner/repo"');
+    }
+    if (!notificationEmail.includes('@')) {
+      throw new Error('NOTIFICATION_EMAIL must be a valid email address');
+    }
+
+    // =============================================================================
     // LAMBDA FUNCTIONS - Core processing components
     // =============================================================================
 
@@ -57,11 +92,19 @@ export class GitHubMonitorStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
       environment: {
-        // GitHub API endpoint - using environment variable for flexibility
-        GITHUB_API_BASE: 'https://api.github.com/repos/azarboon/dummy'
+        // Configuration from environment variables - no hardcoded values
+        GITHUB_API_BASE: `${githubApiBase}/repos/${githubRepository}`,
+        GITHUB_REPOSITORY: githubRepository,
+        SNS_TOPIC_ARN: '', // Will be set after SNS topic creation
+        ENVIRONMENT: environment
       },
       description: 'Fetches git differences from GitHub repository commits'
     });
+
+    // Add resource tagging for cost tracking and ownership
+    cdk.Tags.of(gitDiffProcessorFunction).add('Environment', environment);
+    cdk.Tags.of(gitDiffProcessorFunction).add('Project', 'GitHubMonitor');
+    cdk.Tags.of(gitDiffProcessorFunction).add('Component', 'GitDiffProcessor');
 
     /**
      * CloudWatch Log Group for Git Diff Processor
@@ -90,13 +133,21 @@ export class GitHubMonitorStack extends cdk.Stack {
       displayName: 'GitHub Git Diff Notifications'
     });
 
+    // Add resource tagging for cost tracking and ownership
+    cdk.Tags.of(gitDiffTopic).add('Environment', environment);
+    cdk.Tags.of(gitDiffTopic).add('Project', 'GitHubMonitor');
+    cdk.Tags.of(gitDiffTopic).add('Component', 'Notifications');
+
     /**
      * Email Subscription for Git Diff Notifications
      * Purpose: Delivers git diff notifications to specified email address
-     * Security: Email address is not considered sensitive for this use case
+     * Configuration: Uses environment variable for email address
      * Note: Subscription will require email confirmation after deployment
      */
-    gitDiffTopic.addSubscription(new subscriptions.EmailSubscription('m.azarboon@gmail.com'));
+    gitDiffTopic.addSubscription(new subscriptions.EmailSubscription(notificationEmail));
+
+    // Update Lambda environment variable with SNS topic ARN
+    gitDiffProcessorFunction.addEnvironment('SNS_TOPIC_ARN', gitDiffTopic.topicArn);
 
     // =============================================================================
     // STEP FUNCTIONS - Workflow orchestration
@@ -221,22 +272,27 @@ export class GitHubMonitorStack extends cdk.Stack {
     /**
      * EventBridge Rule for GitHub Push Events
      * Purpose: Filters and routes GitHub push events to Step Functions
-     * Pattern: Only matches push events from azarboon/dummy repository
+     * Pattern: Only matches push events from configured repository
      * Security: Specific repository filtering prevents unauthorized triggers
      */
     const githubCommitRule = new events.Rule(this, 'GitHubCommitRule', {
-      description: 'Trigger on GitHub commit events',
-      // Minimal event pattern - only specific repository push events
+      description: `Trigger on GitHub commit events for ${githubRepository}`,
+      // Event pattern uses environment variable for repository filtering
       eventPattern: {
         source: ['github.webhook'],
         detailType: ['GitHub Push'],
         detail: {
           repository: {
-            full_name: ['azarboon/dummy']
+            full_name: [githubRepository]
           }
         }
       }
     });
+
+    // Add resource tagging for cost tracking and ownership
+    cdk.Tags.of(githubCommitRule).add('Environment', environment);
+    cdk.Tags.of(githubCommitRule).add('Project', 'GitHubMonitor');
+    cdk.Tags.of(githubCommitRule).add('Component', 'EventRouting');
 
     /**
      * EventBridge to Step Functions Target Configuration
@@ -283,8 +339,18 @@ export class GitHubMonitorStack extends cdk.Stack {
       code: lambda.Code.fromAsset('lambda'),
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
+      environment: {
+        // Configuration from environment variables - no hardcoded values
+        GITHUB_REPOSITORY: githubRepository,
+        ENVIRONMENT: environment
+      },
       description: 'Receives GitHub webhooks and forwards to EventBridge'
     });
+
+    // Add resource tagging for cost tracking and ownership
+    cdk.Tags.of(webhookReceiverFunction).add('Environment', environment);
+    cdk.Tags.of(webhookReceiverFunction).add('Project', 'GitHubMonitor');
+    cdk.Tags.of(webhookReceiverFunction).add('Component', 'WebhookReceiver');
 
     /**
      * EventBridge Permissions for Webhook Receiver
