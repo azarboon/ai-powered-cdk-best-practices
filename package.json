@@ -1,7 +1,7 @@
 {
   "name": "github-monitor-cdk",
   "version": "1.0.0",
-  "description": "CDK app to monitor GitHub repository commits and read README",
+  "description": "CDK app to monitor GitHub repository commits and send git diff notifications via SNS",
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",

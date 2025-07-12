@@ -2,14 +2,16 @@
  * GitHub Repository Monitor Stack
  * 
  * Purpose: Monitors the azarboon/dummy GitHub repository for new commits
- * and automatically fetches README content when changes are detected.
+ * and automatically sends git difference notifications via email using SNS.
  * 
  * Architecture:
  * 1. API Gateway receives GitHub webhooks
  * 2. Webhook receiver Lambda transforms events to EventBridge
  * 3. EventBridge triggers Step Functions on push events
- * 4. Step Functions orchestrates README reader Lambda
- * 5. README reader fetches content from GitHub API
+ * 4. Step Functions orchestrates git diff processor Lambda
+ * 5. Git diff processor fetches commit differences from GitHub API
+ * 6. Step Functions publishes git diff to SNS topic
+ * 7. SNS sends email notification with git differences
  * 
  * Security: All components follow least privilege access principles
  * Cost: Minimal configuration with pay-per-use services and log retention
@@ -24,6 +26,8 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Construct } from 'constructs';
 
 /**
@@ -39,14 +43,14 @@ export class GitHubMonitorStack extends cdk.Stack {
     // =============================================================================
 
     /**
-     * README Reader Lambda Function
-     * Purpose: Fetches README content from GitHub API when triggered by Step Functions
+     * Git Diff Processor Lambda Function
+     * Purpose: Fetches git differences from GitHub API when triggered by Step Functions
      * Runtime: Node.js 18.x (minimal, stable runtime)
      * Memory: 256MB (minimal for HTTP requests and JSON processing)
      * Timeout: 30s (sufficient for GitHub API calls with buffer for retries)
      * Security: No internet access restrictions needed for GitHub API calls
      */
-    const readmeReaderFunction = new lambda.Function(this, 'ReadmeReaderFunction', {
+    const gitDiffProcessorFunction = new lambda.Function(this, 'GitDiffProcessorFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset('lambda'),
@@ -54,22 +58,45 @@ export class GitHubMonitorStack extends cdk.Stack {
       memorySize: 256,
       environment: {
         // GitHub API endpoint - using environment variable for flexibility
-        GITHUB_REPO_URL: 'https://api.github.com/repos/azarboon/dummy/readme'
+        GITHUB_API_BASE: 'https://api.github.com/repos/azarboon/dummy'
       },
-      description: 'Fetches README content from GitHub repository'
+      description: 'Fetches git differences from GitHub repository commits'
     });
 
     /**
-     * CloudWatch Log Group for README Reader
+     * CloudWatch Log Group for Git Diff Processor
      * Purpose: Centralized logging with cost-effective retention
      * Retention: 1 week (minimal for debugging, cost-effective)
      * Removal: Destroy with stack (no orphaned resources)
      */
-    new logs.LogGroup(this, 'ReadmeReaderLogGroup', {
-      logGroupName: `/aws/lambda/${readmeReaderFunction.functionName}`,
+    new logs.LogGroup(this, 'GitDiffProcessorLogGroup', {
+      logGroupName: `/aws/lambda/${gitDiffProcessorFunction.functionName}`,
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
+
+    // =============================================================================
+    // SNS TOPIC - Email notifications
+    // =============================================================================
+
+    /**
+     * SNS Topic for Git Diff Notifications
+     * Purpose: Sends email notifications with git differences
+     * Security: Minimal configuration, no encryption needed for git diffs
+     * Cost: Pay-per-message pricing model
+     */
+    const gitDiffTopic = new sns.Topic(this, 'GitDiffTopic', {
+      topicName: 'github-git-diff-notifications',
+      displayName: 'GitHub Git Diff Notifications'
+    });
+
+    /**
+     * Email Subscription for Git Diff Notifications
+     * Purpose: Delivers git diff notifications to specified email address
+     * Security: Email address is not considered sensitive for this use case
+     * Note: Subscription will require email confirmation after deployment
+     */
+    gitDiffTopic.addSubscription(new subscriptions.EmailSubscription('m.azarboon@gmail.com'));
 
     // =============================================================================
     // STEP FUNCTIONS - Workflow orchestration
@@ -77,22 +104,33 @@ export class GitHubMonitorStack extends cdk.Stack {
 
     /**
      * Step Functions IAM Role
-     * Purpose: Allows Step Functions to invoke Lambda functions and write logs
+     * Purpose: Allows Step Functions to invoke Lambda functions, publish to SNS, and write logs
      * Principle: Least privilege - only necessary permissions
-     * Security: Scoped to specific Lambda function ARN where possible
+     * Security: Scoped to specific Lambda function and SNS topic ARNs where possible
      */
     const stepFunctionRole = new iam.Role(this, 'StepFunctionRole', {
       assumedBy: new iam.ServicePrincipal('states.amazonaws.com'),
       description: 'Role for GitHub monitor Step Function',
       inlinePolicies: {
-        // Minimal policy: only invoke the specific README reader Lambda
+        // Minimal policy: only invoke the specific git diff processor Lambda
         LambdaInvokePolicy: new iam.PolicyDocument({
           statements: [
             new iam.PolicyStatement({
               effect: iam.Effect.ALLOW,
               actions: ['lambda:InvokeFunction'],
               // Security: Specific resource ARN, not wildcard
-              resources: [readmeReaderFunction.functionArn]
+              resources: [gitDiffProcessorFunction.functionArn]
+            })
+          ]
+        }),
+        // Minimal policy: only publish to specific SNS topic
+        SNSPublishPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['sns:Publish'],
+              // Security: Specific SNS topic ARN, not wildcard
+              resources: [gitDiffTopic.topicArn]
             })
           ]
         }),
@@ -125,34 +163,47 @@ export class GitHubMonitorStack extends cdk.Stack {
      * Retention: 1 week (cost-effective, sufficient for debugging)
      */
     const stepFunctionLogGroup = new logs.LogGroup(this, 'StepFunctionLogGroup', {
-      logGroupName: '/aws/stepfunctions/GitHubMonitorStateMachine',
+      logGroupName: '/aws/stepfunctions/GitHubDiffStateMachine',
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
     /**
-     * Step Function Task Definition
+     * Step Function Task Definition - Git Diff Processing
      * Purpose: Defines the Lambda invocation task within the workflow
      * Configuration: Minimal - just invoke Lambda and return payload
      * Error Handling: Built-in service exception retries enabled
      */
-    const readmeTask = new tasks.LambdaInvoke(this, 'ReadREADMETask', {
-      lambdaFunction: readmeReaderFunction,
-      comment: 'Invoke Lambda to read README from GitHub',
+    const gitDiffTask = new tasks.LambdaInvoke(this, 'ProcessGitDiffTask', {
+      lambdaFunction: gitDiffProcessorFunction,
+      comment: 'Invoke Lambda to process git differences from GitHub',
       retryOnServiceExceptions: true,
       // Security: Don't include client context or payload in logs
       outputPath: '$.Payload'
     });
 
     /**
+     * Step Function Task Definition - SNS Notification
+     * Purpose: Publishes git diff results to SNS topic for email notification
+     * Configuration: Uses dynamic message from previous Lambda output
+     * Security: Minimal permissions, specific topic targeting
+     */
+    const snsNotificationTask = new tasks.SnsPublish(this, 'SendGitDiffNotification', {
+      topic: gitDiffTopic,
+      subject: stepfunctions.JsonPath.stringAt('$.subject'),
+      message: stepfunctions.TaskInput.fromJsonPathAt('$.message'),
+      comment: 'Send git diff notification via SNS email'
+    });
+
+    /**
      * Step Functions State Machine
-     * Purpose: Orchestrates the README reading workflow
-     * Definition: Single task (minimal workflow)
-     * Timeout: 5 minutes (generous buffer for GitHub API calls)
+     * Purpose: Orchestrates the git diff processing and notification workflow
+     * Definition: Sequential workflow - process git diff then send notification
+     * Timeout: 5 minutes (generous buffer for GitHub API calls and SNS)
      * Logging: Error level only (minimal logging, cost-effective)
      */
-    const stateMachine = new stepfunctions.StateMachine(this, 'GitHubMonitorStateMachine', {
-      definition: readmeTask,
+    const stateMachine = new stepfunctions.StateMachine(this, 'GitHubDiffStateMachine', {
+      definition: gitDiffTask.next(snsNotificationTask),
       role: stepFunctionRole,
       timeout: cdk.Duration.minutes(5),
       // Security: Enable logging but exclude sensitive data
@@ -307,12 +358,21 @@ export class GitHubMonitorStack extends cdk.Stack {
     });
 
     /**
-     * README Reader Lambda Function ARN Output
+     * Git Diff Processor Lambda Function ARN Output
      * Purpose: Reference for monitoring and debugging
      */
     new cdk.CfnOutput(this, 'LambdaFunctionArn', {
-      value: readmeReaderFunction.functionArn,
-      description: 'README Reader Lambda Function ARN'
+      value: gitDiffProcessorFunction.functionArn,
+      description: 'Git Diff Processor Lambda Function ARN'
+    });
+
+    /**
+     * SNS Topic ARN Output
+     * Purpose: Reference for monitoring and manual testing
+     */
+    new cdk.CfnOutput(this, 'SNSTopicArn', {
+      value: gitDiffTopic.topicArn,
+      description: 'SNS Topic ARN for git diff notifications'
     });
 
     /**

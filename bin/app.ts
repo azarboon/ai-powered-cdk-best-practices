@@ -34,8 +34,8 @@ const app = new cdk.App();
  */
 new GitHubMonitorStack(app, 'GitHubMonitorStack', {
   env: {
-    account: '381492315817',
+    account: '767397688701',
     region: 'us-east-1',
   },
-  description: 'Monitor GitHub repository commits and read README file'
+  description: 'Monitor GitHub repository commits and send git diff notifications via SNS'
 });
