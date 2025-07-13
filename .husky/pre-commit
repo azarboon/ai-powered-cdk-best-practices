@@ -1,8 +1,18 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Set PATH to ensure npm and node are available
-export PATH="/usr/bin:/usr/local/bin:$PATH"
+# Try to find npm in common locations
+NPM_PATH=""
+if [ -f "/usr/bin/npm" ]; then
+    NPM_PATH="/usr/bin/npm"
+elif [ -f "/usr/local/bin/npm" ]; then
+    NPM_PATH="/usr/local/bin/npm"
+elif [ -f "/usr/lib/node_modules/npm/bin/npm-cli.js" ]; then
+    NPM_PATH="node /usr/lib/node_modules/npm/bin/npm-cli.js"
+else
+    # Try to use npm from PATH
+    NPM_PATH="npm"
+fi
 
 echo ""
 echo "🔍 PRE-COMMIT VALIDATION (MANDATORY)"
@@ -23,7 +33,7 @@ echo "   - Validating ALL JavaScript and TypeScript files"
 echo "   - Enforcing code quality standards"
 echo ""
 
-if ! npm run precommit; then
+if ! $NPM_PATH run precommit; then
     echo ""
     echo "❌ COMMIT BLOCKED: ESLint validation failed"
     echo "=========================================="
