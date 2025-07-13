@@ -13,7 +13,10 @@ The app is developed using Amazon Q CLI. While Amazon Q CLI can be very powerful
 
 Once this project is finalized, I plan to use it as a foundation for other projects—particularly those focused on scrutinizing error handling and troubleshooting across multiple AWS services. As a result, this app intentionally includes various integrations between AWS services that may not represent ideal real-world architecture but serve to demonstrate and test more complex scenarios.
 
-## TODO (for myself): AI assistant, please ignore this section and do not act on it.
+## TODO 
+
+<!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
+
 
 add and efnorce these rules in project rule:
 
