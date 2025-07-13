@@ -1,26 +1,94 @@
 #!/bin/bash
 . "$(dirname -- "$0")/_/husky.sh"
 
+# =============================================================================
+# Portable Pre-Commit Hook for ESLint Validation
+# =============================================================================
+# This hook works across different environments:
+# - Native Linux/macOS terminals
+# - WSL (Windows Subsystem for Linux)
+# - Git Bash on Windows
+# - GitHub Codespaces
+# - Docker containers
+# =============================================================================
+
 # Change to project directory
 cd "$(dirname "$0")/.."
 
-echo "🔍 PRE-COMMIT VALIDATION (Git Bash -> WSL)"
-echo "=========================================="
-echo "Git is running in MinGW/Git Bash environment"
-echo "Using WSL to run Node.js and npm..."
+echo "🔍 PRE-COMMIT VALIDATION"
+echo "========================"
+echo "Environment: $(uname -s 2>/dev/null || echo 'Unknown')"
 echo ""
 
-# Use WSL to run our npm script since that's where Node.js is installed
-if command -v wsl >/dev/null 2>&1; then
-    # Run the validation using WSL
-    wsl -e bash -c "cd /mnt/c/Users/mazar/cdk/q-sample && npm run lint-staged-files"
-else
-    echo "❌ ERROR: WSL not available"
-    echo "This project requires WSL to run Node.js/npm from Git Bash"
+# Function to find and test npm
+find_npm() {
+    # Method 1: Try npm directly (works in most environments)
+    if command -v npm >/dev/null 2>&1; then
+        echo "npm"
+        return 0
+    fi
+    
+    # Method 2: Try common absolute paths
+    for npm_path in "/usr/bin/npm" "/usr/local/bin/npm" "/opt/homebrew/bin/npm"; do
+        if [ -f "$npm_path" ] && [ -x "$npm_path" ]; then
+            echo "$npm_path"
+            return 0
+        fi
+    done
+    
+    # Method 3: Try Windows paths (for Git Bash)
+    for npm_path in "/c/Program Files/nodejs/npm.cmd" "/c/nodejs/npm.cmd"; do
+        if [ -f "$npm_path" ]; then
+            echo "$npm_path"
+            return 0
+        fi
+    done
+    
+    # Method 4: Try WSL from Git Bash (Windows)
+    if command -v wsl >/dev/null 2>&1; then
+        # Test if WSL can run npm
+        if wsl -e bash -c "command -v npm" >/dev/null 2>&1; then
+            echo "wsl_npm"
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
+# Find npm command
+NPM_CMD=$(find_npm)
+if [ $? -ne 0 ]; then
+    echo "❌ ERROR: npm not found in any supported environment"
     echo ""
-    echo "Alternative: Use WSL terminal directly for git operations:"
-    echo "  wsl"
-    echo "  cd /mnt/c/Users/mazar/cdk/q-sample"
-    echo "  git commit -m 'your message'"
+    echo "Please ensure Node.js and npm are installed:"
+    echo ""
+    echo "📋 Installation Options:"
+    echo "  • Linux/WSL: sudo apt install nodejs npm"
+    echo "  • macOS: brew install node"
+    echo "  • Windows: Download from https://nodejs.org"
+    echo "  • Or use Node Version Manager (nvm)"
+    echo ""
+    echo "💡 After installation, restart your terminal and try again."
+    echo "💡 You can also run the setup script: ./setup.sh"
+    echo ""
     exit 1
 fi
+
+echo "✅ Found npm: $NPM_CMD"
+echo ""
+
+# Run ESLint validation based on environment
+case "$NPM_CMD" in
+    "wsl_npm")
+        echo "🔄 Running via WSL (Git Bash detected)..."
+        # Use current directory path instead of hardcoded path
+        CURRENT_DIR=$(pwd)
+        WSL_PATH=$(echo "$CURRENT_DIR" | sed 's|^/mnt/c|/c|' | sed 's|^/c|/mnt/c|')
+        wsl -e bash -c "cd '$WSL_PATH' && npm run lint-staged-files"
+        ;;
+    *)
+        echo "🔄 Running ESLint validation..."
+        $NPM_CMD run lint-staged-files
+        ;;
+esac

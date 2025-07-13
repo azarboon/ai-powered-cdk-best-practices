@@ -138,6 +138,101 @@ npm run lint        # Verify all issues resolved
 
 ---
 
+---
+
+## 🌍 **Cross-Platform Setup Guide**
+
+### **Environment Compatibility**
+This project works seamlessly across all development environments with intelligent pre-commit hooks that auto-detect your setup:
+
+- ✅ **Linux** (Ubuntu, Debian, CentOS, etc.)
+- ✅ **macOS** (Intel and Apple Silicon)  
+- ✅ **Windows** (WSL, Git Bash, PowerShell, CMD)
+- ✅ **WSL** (Windows Subsystem for Linux)
+- ✅ **GitHub Codespaces**
+- ✅ **Docker containers**
+
+### **Node.js Installation (Required)**
+
+#### **🐧 Linux/WSL**
+```bash
+# Ubuntu/Debian (Recommended)
+sudo apt update && sudo apt install nodejs npm
+
+# Verify installation
+node --version && npm --version
+```
+
+#### **🍎 macOS**
+```bash
+# Using Homebrew (Recommended)
+brew install node
+
+# Verify installation  
+node --version && npm --version
+```
+
+#### **🪟 Windows**
+```powershell
+# Download from https://nodejs.org (Recommended)
+# - Download LTS version installer
+# - Run with default settings
+# - Restart terminal
+
+# Verify installation
+node --version && npm --version
+```
+
+### **🔒 Intelligent Pre-Commit System**
+
+**Automatic Features:**
+- 🎯 **Environment Detection**: Auto-detects Linux/macOS/Windows/WSL/Git Bash
+- ⚡ **Staged Files Only**: Processes only changed files (efficient)
+- 🔧 **Auto-Fix**: Fixes ESLint issues automatically
+- 🚫 **Zero Tolerance**: Blocks commits with code quality issues
+- 🌐 **Universal Compatibility**: Single setup works everywhere
+
+**Troubleshooting:**
+```bash
+# Test the pre-commit hook
+./.husky/pre-commit
+
+# Verify npm is available
+which npm && npm --version
+
+# If issues persist, reinstall Node.js using guide above
+```
+
+### **⚡ Quick Setup (Recommended)**
+
+For the fastest setup experience, use the automated setup script:
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd q-sample
+
+# Run automated setup (works on all platforms)
+./setup.sh
+```
+
+The setup script will:
+- ✅ **Detect your environment** automatically
+- ✅ **Verify Node.js and npm** installation
+- ✅ **Install all dependencies** 
+- ✅ **Configure pre-commit hooks**
+- ✅ **Test the setup** to ensure everything works
+- ✅ **Provide next steps** for configuration and deployment
+
+**Manual Setup Alternative:**
+```bash
+npm install          # Install dependencies
+npm run prepare      # Setup pre-commit hooks
+./.husky/pre-commit  # Test hook (optional)
+```
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
