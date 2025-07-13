@@ -1,19 +1,6 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Try to find npm in common locations
-NPM_PATH=""
-if [ -f "/usr/bin/npm" ]; then
-    NPM_PATH="/usr/bin/npm"
-elif [ -f "/usr/local/bin/npm" ]; then
-    NPM_PATH="/usr/local/bin/npm"
-elif [ -f "/usr/lib/node_modules/npm/bin/npm-cli.js" ]; then
-    NPM_PATH="node /usr/lib/node_modules/npm/bin/npm-cli.js"
-else
-    # Try to use npm from PATH
-    NPM_PATH="npm"
-fi
-
 echo ""
 echo "🔍 PRE-COMMIT VALIDATION (MANDATORY)"
 echo "===================================="
@@ -33,7 +20,23 @@ echo "   - Validating ALL JavaScript and TypeScript files"
 echo "   - Enforcing code quality standards"
 echo ""
 
-if ! $NPM_PATH run precommit; then
+# Use the current shell's PATH to find npm
+export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+
+# Try different ways to run npm
+if command -v npm >/dev/null 2>&1; then
+    NPM_CMD="npm"
+elif [ -f "/usr/bin/npm" ]; then
+    NPM_CMD="/usr/bin/npm"
+elif [ -f "/usr/local/bin/npm" ]; then
+    NPM_CMD="/usr/local/bin/npm"
+else
+    echo "❌ ERROR: npm command not found"
+    echo "Please ensure Node.js and npm are properly installed"
+    exit 1
+fi
+
+if ! $NPM_CMD run precommit; then
     echo ""
     echo "❌ COMMIT BLOCKED: ESLint validation failed"
     echo "=========================================="
