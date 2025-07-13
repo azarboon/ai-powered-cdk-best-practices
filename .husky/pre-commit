@@ -1,31 +1,13 @@
-#!/usr/bin/env sh
+#!/bin/bash
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Simple approach: use env to find node, with fallbacks
-if env node --version >/dev/null 2>&1; then
-    NODE_CMD="env node"
-elif /usr/bin/node --version >/dev/null 2>&1; then
-    NODE_CMD="/usr/bin/node"
-else
-    # Last resort: try to source bashrc and use node
-    if [ -f "$HOME/.bashrc" ]; then
-        . "$HOME/.bashrc"
-        if command -v node >/dev/null 2>&1; then
-            NODE_CMD="node"
-        else
-            echo "❌ ERROR: Node.js not available in any form"
-            echo "Tried: env node, /usr/bin/node, sourcing ~/.bashrc"
-            exit 1
-        fi
-    else
-        echo "❌ ERROR: Node.js not found and no ~/.bashrc to source"
-        exit 1
-    fi
+# Source the user's bashrc to get full environment
+if [ -f "$HOME/.bashrc" ]; then
+    source "$HOME/.bashrc"
 fi
 
 # Change to project directory
 cd "$(dirname "$0")/.."
 
-# Run the script
-echo "Using Node.js command: $NODE_CMD"
-exec $NODE_CMD scripts/lint-staged-files.js
+# Run with npm since it should now be available
+npm run lint-staged-files
