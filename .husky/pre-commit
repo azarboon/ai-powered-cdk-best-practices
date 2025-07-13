@@ -1,13 +1,26 @@
 #!/bin/bash
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Source the user's bashrc to get full environment
-if [ -f "$HOME/.bashrc" ]; then
-    source "$HOME/.bashrc"
-fi
-
 # Change to project directory
 cd "$(dirname "$0")/.."
 
-# Run with npm since it should now be available
-npm run lint-staged-files
+echo "🔍 PRE-COMMIT VALIDATION (Git Bash -> WSL)"
+echo "=========================================="
+echo "Git is running in MinGW/Git Bash environment"
+echo "Using WSL to run Node.js and npm..."
+echo ""
+
+# Use WSL to run our npm script since that's where Node.js is installed
+if command -v wsl >/dev/null 2>&1; then
+    # Run the validation using WSL
+    wsl -e bash -c "cd /mnt/c/Users/mazar/cdk/q-sample && npm run lint-staged-files"
+else
+    echo "❌ ERROR: WSL not available"
+    echo "This project requires WSL to run Node.js/npm from Git Bash"
+    echo ""
+    echo "Alternative: Use WSL terminal directly for git operations:"
+    echo "  wsl"
+    echo "  cd /mnt/c/Users/mazar/cdk/q-sample"
+    echo "  git commit -m 'your message'"
+    exit 1
+fi
