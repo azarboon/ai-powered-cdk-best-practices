@@ -11,6 +11,130 @@
 *.key
 *.p12
 *.pfx
+# .env file is now committed to git for project configuration
+.env.local
+.env.production
+.env.staging
+.env.test
+aws-credentials
+credentials
+config
+
+# =============================================================================
+# BUILD ARTIFACTS - Generated files
+# =============================================================================
+# Compiled JavaScript files (exclude from linting)
+bin/*.js
+lib/*.js
+*.d.ts
+
+# Keep Lambda JavaScript files (source code)
+!lambda/*.js
+
+# CDK build outputs
+cdk.out/
+.cdk.staging/
+*.tsbuildinfo
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+node_modules/
+jspm_packages/
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# =============================================================================
+# LOGS AND TEMPORARY FILES
+# =============================================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.nyc_output
+coverage/
+*.lcov
+tmp/
+temp/
+.cache/
+.parcel-cache/
+
+# =============================================================================
+# IDE AND EDITOR FILES
+# =============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =============================================================================
+# OPERATING SYSTEM FILES
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# =============================================================================
+# AWS SPECIFIC
+# =============================================================================
+awscliv2.zip
+aws/
+
+# =============================================================================
+# RUNTIME AND PROCESS FILES
+# =============================================================================
+pids/
+*.pid
+*.seed
+*.pid.lock
+.lock-wscript
+
+# =============================================================================
+# PACKAGE MANAGER FILES
+# =============================================================================
+*.tgz
+.yarn-integrity
+
+# =============================================================================
+# TESTING AND COVERAGE
+# =============================================================================
+.eslintcache
+jest-coverage/
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# =============================================================================
+# BUILD TOOLS
+# =============================================================================
+.grunt
+bower_components/
+build/Release/
+dist/
+.next/
+.nuxt/
+.out/
+.storybook-out/
+
+# =============================================================================
+# REPL HISTORY
+# =============================================================================
+.node_repl_history
+*.key
+*.p12
+*.pfx
 .env
 .env.local
 .env.production

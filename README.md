@@ -2,17 +2,18 @@
 <!-- PROTECTED SECTION - DO NOT MODIFY        -->
 <!-- AI ASSISTANTS: DO NOT EDIT ANYTHING BETWEEN THESE MARKERS UNTIL AFTER IT EXPLICITLY SAYS "END PROTECTED SECTION"  -->
 <!-- ========================================= -->
+
+<!-- NOTE to self: start WSL terminal, update aws account id and email in .env.template, then aws configure, then run q command line -->
+
 # Repository Monitor
 
 This CDK application monitors the azarboon/dummy GitHub repository for new commits and reads the content of its README file. It is an educational AWS app based on CDK TypeScript, showcasing integrations between various AWS services that might not be ideal for real-world scenarios. This project was created using the Amazon Q CLI.
 
 
-## TODO:
+## TODO (for myself): AI assistant, please ignore this section and do not act on it.
 
-enforce eslint for comments too. make sure its ran successfully and enforced before any commit else it fails.
+add and efnorce these rules in project rule:
 
-Implement CDK nag rule with  AWS Solutions Library rule pack. test it works
-Enforce eslint for code comments also. check whether you can enfoce it via eslint before any commit.
 
 When everything worked, run the project yourself, inspect the code and ask other genai tools to test the quality of the code and find bloatness, inefficeny, insecure code.
 
@@ -43,6 +44,97 @@ You can update the project rules by editing the `./PROJECT_RULES.md` file.
 <!-- END PROTECTED SECTION                    -->
 <!-- ========================================= -->
 
+## 🔍 **ESLint Code Quality Requirements**
+
+### **⚠️ COMMIT-TIME ENFORCEMENT**
+**ALL JavaScript and TypeScript files MUST pass ESLint validation before every commit. Deployments focus on build and template validation for faster cycles.**
+
+### **📋 What is Validated**
+- **All JavaScript files** in `lambda/` directory
+- **All TypeScript files** in `bin/` and `lib/` directories  
+- **Code quality standards** (formatting, best practices)
+- **Comment standards** (JSDoc documentation)
+- **TypeScript-specific rules** (type safety, modern syntax)
+- **Zero warnings tolerance** - no warnings allowed
+
+### **🔧 ESLint Commands**
+```bash
+# Check all files for linting issues
+npm run lint
+
+# Auto-fix issues where possible
+npm run lint:fix
+
+# Complete validation pipeline (build + synth, no linting)
+npm run validate
+```
+
+### **🚨 When ESLint Runs (COMMIT-TIME ONLY)**
+1. **Before every commit** - Husky pre-commit hook (MANDATORY)
+2. **Manual validation** - npm run lint (optional)
+3. **NOT before deployment** - Deployments focus on build validation
+
+### **❌ What Happens if ESLint Fails**
+- **Commits are BLOCKED** - cannot commit with linting errors
+- **Deployments proceed** - ESLint not enforced during deployment
+- **Pre-commit hooks fail** - must fix issues before committing
+
+### **✅ ESLint Requirements Enforced**
+- **Function Documentation**: All functions must have JSDoc comments
+- **Parameter Documentation**: All parameters must be documented
+- **Return Documentation**: All return values must be documented
+- **Complete Sentences**: Comments must end with periods
+- **TypeScript Best Practices**: Proper types, nullish coalescing, etc.
+- **Consistent Formatting**: Indentation, quotes, semicolons
+
+### **🔧 Common ESLint Fixes**
+```javascript
+// ❌ BAD - Missing JSDoc
+function processData(data) {
+    return data.map(item => item.value);
+}
+
+// ✅ GOOD - Proper JSDoc
+/**
+ * Processes data array and extracts values.
+ * 
+ * @param {Array} data - Array of data objects to process.
+ * @returns {Array} Array of extracted values.
+ */
+function processData(data) {
+    return data.map(item => item.value);
+}
+```
+
+### **📁 Directories Validated**
+- `bin/` - CDK application entry points (TypeScript)
+- `lib/` - CDK stack definitions (TypeScript)
+- `lambda/` - Lambda function code (JavaScript)
+- Excludes: `node_modules/`, compiled `.js` files in `bin/` and `lib/`
+
+### **🚀 Developer Workflow**
+1. **Write code** with proper JSDoc comments
+2. **Run `npm run lint:fix`** to auto-fix issues
+3. **Run `npm run lint`** to check remaining issues
+4. **Fix any remaining issues manually**
+5. **Commit** - pre-commit hook validates automatically
+6. **Deploy** - deployment script validates build only
+
+### **⚠️ Troubleshooting ESLint Issues**
+```bash
+# If commit is blocked by ESLint:
+npm run lint:fix    # Auto-fix what's possible
+npm run lint        # See remaining issues
+# Fix remaining issues manually, then commit again
+
+# If you need to check code quality before deployment:
+npm run lint:fix    # Auto-fix what's possible  
+npm run lint        # Verify all issues resolved
+./deploy.sh         # Deploy (no ESLint validation during deployment)
+```
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -52,12 +144,13 @@ You can update the project rules by editing the `./PROJECT_RULES.md` file.
 - **GitHub Repository Access** for webhook configuration
 
 ### Environment Setup
-1. **Copy environment template:**
+1. **Configure environment variables in .env:**
    ```bash
-   cp .env.template .env
+   # Edit the .env file with your actual values
+   nano .env  # or use your preferred editor
    ```
 
-2. **Configure environment variables in .env:**
+2. **Update .env file with your values:**
    ```bash
    # Required Configuration
    CDK_DEFAULT_ACCOUNT=your-aws-account-id
@@ -109,10 +202,10 @@ npm run deploy
 ```
 
 ### Development Workflow
-- **Before changes:** `npm run validate` (runs lint + build + synth)
-- **Code quality:** `npm run lint` or `npm run lint:fix`
+- **Before changes:** `npm run validate` (runs build + synth, no linting)
+- **Code quality:** `npm run lint` or `npm run lint:fix` (enforced at commit time)
 - **Build only:** `npm run build`
-- **Deploy with validation:** `npm run deploy`
+- **Deploy with validation:** `npm run deploy` (build + deploy, no linting)
 
 ## 📋 Configuration
 
@@ -195,9 +288,6 @@ You can also use these instead of `CDK_DEFAULT_*`:
 ```bash
 # Clone or navigate to project directory
 cd /path/to/your/project
-
-# Copy environment template
-cp .env.template .env
 
 # Edit .env file with your values
 nano .env  # or use your preferred editor
@@ -324,7 +414,7 @@ curl -X POST https://your-webhook-url/webhook \
 ## 🔧 Development Guidelines
 
 ### Code Quality
-- **ESLint Validation**: All code must pass linting before deployment
+- **ESLint Validation**: All code must pass linting before commits (not deployments)
 - **Environment Variables**: No hardcoded values allowed
 - **Comprehensive Comments**: Every component and function documented
 - **Security First**: Least privilege access, no credential exposure
@@ -335,14 +425,14 @@ curl -X POST https://your-webhook-url/webhook \
 npm run build          # Build TypeScript code
 npm run lint           # Run ESLint validation
 npm run lint:fix       # Auto-fix ESLint issues
-npm run validate       # Run lint + build + CDK synth
-npm run deploy         # Deploy with validation
-npm run precommit      # Pre-commit validation hook
+npm run validate       # Run build + CDK synth (no linting)
+npm run deploy         # Deploy with build validation (no linting)
+npm run precommit      # Pre-commit validation hook (includes linting)
 ```
 
 ### Deployment Process
-1. Always run `npm run validate` before deployment
-2. Use `./deploy.sh` for automated deployment with validation
+1. Always run `npm run validate` before deployment (build + synth validation)
+2. Use `./deploy.sh` for automated deployment with build validation
 3. Monitor CloudWatch logs for successful operation
 4. Update GitHub webhook URL if API Gateway endpoint changes
 

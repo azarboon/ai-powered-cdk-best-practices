@@ -1,36 +1,39 @@
 /**
- * Git Diff Processor Lambda Function
+ * Git Diff Processor Lambda Function.
  * 
  * Purpose: Fetches git differences from GitHub repository API for commits
- * Trigger: Step Functions (when new commits are detected)
+ * Trigger: Step Functions (when new commits are detected).
  * 
  * Security Features:
  * - No hardcoded credentials or repository names (uses environment variables)
  * - Request timeout limits (30s)
  * - Minimal data exposure in logs
- * - Error handling with proper HTTP status codes
+ * - Error handling with proper HTTP status codes.
  * 
  * Cost Optimization:
  * - Minimal memory allocation (256MB)
  * - Short timeout (30s)
- * - Efficient HTTP client (Node.js built-in)
+ * - Efficient HTTP client (Node.js built-in).
  * 
  * Configuration:
  * - GITHUB_API_BASE: GitHub API base URL for repository
  * - GITHUB_REPOSITORY: Target repository (format: owner/repo)
- * - ENVIRONMENT: Environment tag for logging context
+ * - ENVIRONMENT: Environment tag for logging context.
  */
 
 const https = require('https');
 
-// Configuration from environment variables - no hardcoded values
+/**
+ * Configuration from environment variables - no hardcoded values.
+ */
 const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY || 'azarboon/dummy';
 const ENVIRONMENT = process.env.ENVIRONMENT || 'dev';
 
 /**
- * Main Lambda handler function
- * @param {Object} event - Step Functions input event containing commit information
- * @returns {Object} Response with git diff data formatted for SNS
+ * Main Lambda handler function.
+ * 
+ * @param {object} event - Step Functions input event containing commit information.
+ * @returns {Promise<object>} Response with git diff data formatted for SNS.
  */
 exports.handler = async (event) => {
   console.log(`[${ENVIRONMENT}] Event received:`, JSON.stringify(event, null, 2));
@@ -110,10 +113,11 @@ exports.handler = async (event) => {
 };
 
 /**
- * Fetches commit data including diff from GitHub API
- * @param {string} repositoryName - Repository name (e.g., 'owner/repo')
- * @param {string} commitSha - Commit SHA hash
- * @returns {Promise<Object>} Commit data with files and changes
+ * Fetches commit data including diff from GitHub API.
+ * 
+ * @param {string} repositoryName - Repository name (e.g., 'owner/repo').
+ * @param {string} commitSha - Commit SHA hash.
+ * @returns {Promise<object>} Commit data with files and changes.
  */
 function fetchCommitData(repositoryName, commitSha) {
   return new Promise((resolve, reject) => {
@@ -167,9 +171,10 @@ function fetchCommitData(repositoryName, commitSha) {
 }
 
 /**
- * Formats commit diff data for email display
- * @param {Object} commitData - GitHub API commit response
- * @returns {string} Formatted diff string
+ * Formats commit diff data for email display.
+ * 
+ * @param {object} commitData - GitHub API commit response.
+ * @returns {string} Formatted diff string.
  */
 function formatDiff(commitData) {
   if (!commitData.files || commitData.files.length === 0) {
@@ -204,10 +209,11 @@ function formatDiff(commitData) {
 }
 
 /**
- * Formats the complete email message with all commit diffs
- * @param {string} repositoryName - Repository name
- * @param {Array} commitDiffs - Array of commit diff objects
- * @returns {string} Formatted email message
+ * Formats the complete email message with all commit diffs.
+ * 
+ * @param {string} repositoryName - Repository name.
+ * @param {Array} commitDiffs - Array of commit diff objects.
+ * @returns {string} Formatted email message.
  */
 function formatEmailMessage(repositoryName, commitDiffs) {
   let message = `New commits pushed to ${repositoryName}\n`;
@@ -232,5 +238,4 @@ function formatEmailMessage(repositoryName, commitDiffs) {
     
   return message;
 }
-
 

@@ -1,41 +1,46 @@
 /**
- * GitHub Webhook Receiver Lambda Function
+ * GitHub Webhook Receiver Lambda Function.
  * 
  * Purpose: Receives GitHub webhook events and transforms them to EventBridge events
- * Trigger: API Gateway (GitHub webhook POST requests)
+ * Trigger: API Gateway (GitHub webhook POST requests).
  * 
  * Security Features:
  * - Repository filtering (configurable via environment variables)
  * - Event type filtering (only push events)
  * - Minimal EventBridge permissions
  * - No sensitive data logging
- * - Proper error handling
+ * - Proper error handling.
  * 
  * Cost Optimization:
  * - Minimal memory allocation (256MB)
  * - Short timeout (30s)
  * - Efficient event processing
- * - Early return for ignored events
+ * - Early return for ignored events.
  * 
  * Configuration:
  * - GITHUB_REPOSITORY: Target repository (format: owner/repo)
  * - AWS_REGION: AWS region for EventBridge client
- * - ENVIRONMENT: Environment tag for logging context
+ * - ENVIRONMENT: Environment tag for logging context.
  */
 
 const { EventBridgeClient, PutEventsCommand } = require('@aws-sdk/client-eventbridge');
 
-// Initialize EventBridge client with current region
+/**
+ * Initialize EventBridge client with current region.
+ */
 const eventBridge = new EventBridgeClient({ region: process.env.AWS_REGION });
 
-// Configuration from environment variables - no hardcoded values
+/**
+ * Configuration from environment variables - no hardcoded values.
+ */
 const TARGET_REPOSITORY = process.env.GITHUB_REPOSITORY || 'azarboon/dummy';
 const ENVIRONMENT = process.env.ENVIRONMENT || 'dev';
 
 /**
- * Main Lambda handler function
- * @param {Object} event - API Gateway event from GitHub webhook
- * @returns {Object} HTTP response for GitHub webhook
+ * Main Lambda handler function.
+ * 
+ * @param {object} event - API Gateway event from GitHub webhook.
+ * @returns {Promise<object>} HTTP response for GitHub webhook.
  */
 exports.handler = async (event) => {
   console.log(`[${ENVIRONMENT}] Webhook received:`, JSON.stringify(event, null, 2));

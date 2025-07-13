@@ -1,0 +1,69 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo ""
+echo "🔍 PRE-COMMIT VALIDATION (MANDATORY)"
+echo "===================================="
+echo ""
+echo "⚠️  CRITICAL REQUIREMENT: ESLint validation MUST pass before commit"
+echo "   - Code quality enforced at commit time ONLY"
+echo "   - Deployments focus on build validation for faster cycles"
+echo "   - All JavaScript and TypeScript files in bin/, lib/, lambda/"
+echo "   - TypeScript-specific rules enforced"
+echo "   - Comment standards enforced (JSDoc)"
+echo "   - Zero warnings tolerance"
+echo ""
+
+# Step 1: Run lint-staged for file-specific checks (includes ESLint --fix)
+echo "🔧 Step 1: Running ESLint auto-fix on staged files..."
+if ! npx lint-staged; then
+    echo ""
+    echo "❌ COMMIT BLOCKED: lint-staged encountered issues"
+    echo "   Fix the issues shown above and try committing again"
+    exit 1
+fi
+
+echo "✅ ESLint auto-fix completed on staged files"
+echo ""
+
+# Step 2: Run comprehensive ESLint validation
+echo "🔍 Step 2: Running comprehensive ESLint validation..."
+echo "   - Validating ALL JavaScript and TypeScript files"
+echo "   - Enforcing code quality standards"
+echo ""
+
+if ! npm run precommit; then
+    echo ""
+    echo "❌ COMMIT BLOCKED: ESLint validation failed"
+    echo "=========================================="
+    echo ""
+    echo "🚨 CRITICAL: Code quality standards not met"
+    echo ""
+    echo "Required actions before committing:"
+    echo "1. Fix all ESLint errors shown above"
+    echo "2. Ensure all functions have proper JSDoc comments"
+    echo "3. Use proper TypeScript best practices"
+    echo ""
+    echo "🔧 Quick fix commands:"
+    echo "   npm run lint:fix    # Auto-fix ESLint issues"
+    echo "   npm run lint        # Check remaining ESLint issues"
+    echo ""
+    echo "💡 Common ESLint fixes needed:"
+    echo "   - Add JSDoc comments to functions"
+    echo "   - Fix TypeScript type annotations"
+    echo "   - Correct indentation and formatting"
+    echo "   - Use proper parameter and return documentation"
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "✅ ALL PRE-COMMIT CHECKS PASSED!"
+echo "================================"
+echo "   ✅ ESLint validation: PASSED (MANDATORY)"
+echo "   ✅ Code quality standards: MET"
+echo "   ✅ Comment standards: ENFORCED"
+echo ""
+echo "🎉 Commit approved - proceeding..."
+echo "💡 Note: Deployments will focus on build validation only"
+echo ""

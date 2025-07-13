@@ -4,15 +4,19 @@
 # GitHub Monitor CDK Application - Deployment Script
 # =============================================================================
 # 
-# Purpose: Automated deployment following project rules and best practices
+# Purpose: Automated deployment with build validation
 # 
+# NOTE: ESLint validation is enforced ONLY at commit time via pre-commit hooks
+# - Deployment focuses on build and CDK template validation
+# - Code quality is ensured before commits, not before deployments
+# - This allows faster deployment cycles while maintaining code quality
+#
 # This script:
 # 1. Validates environment variables
-# 2. Runs ESLint validation
-# 3. Builds TypeScript code
-# 4. Runs CDK synth for validation
-# 5. Deploys the stack
-# 6. Displays important outputs
+# 2. Builds TypeScript code
+# 3. Validates CDK templates
+# 4. Deploys the stack
+# 5. Displays important outputs
 #
 # Usage: ./deploy.sh
 # Prerequisites: Environment variables must be set (see .env.template)
@@ -23,6 +27,12 @@ set -e  # Exit on any error
 
 echo "🚀 GitHub Monitor CDK Deployment Script"
 echo "========================================"
+echo ""
+echo "ℹ️  Code Quality: ESLint validation enforced at commit time only"
+echo "   - Pre-commit hooks ensure code quality before commits"
+echo "   - Deployment focuses on build and template validation"
+echo "   - Faster deployment cycles with maintained code quality"
+echo ""
 
 # =============================================================================
 # STEP 1: Environment Validation
@@ -58,9 +68,9 @@ if [ ${#MISSING_VARS[@]} -ne 0 ]; then
     echo "❌ Error: Missing required environment variables:"
     printf '   - %s\n' "${MISSING_VARS[@]}"
     echo ""
-    echo "💡 Solution: Set environment variables or use .env file:"
-    echo "   cp .env.template .env"
+    echo "💡 Solution: Set environment variables or update .env file:"
     echo "   # Edit .env with your values"
+    echo "   nano .env"
     echo "   source .env"
     echo "   ./deploy.sh"
     exit 1
@@ -74,46 +84,66 @@ echo "   Email: $NOTIFICATION_EMAIL"
 echo ""
 
 # =============================================================================
-# STEP 2: Code Quality Validation
+# STEP 2: TypeScript Build
 # =============================================================================
-echo "🔍 Step 2: Running code quality checks..."
+echo "🔨 Step 2: Building TypeScript Code"
+echo "===================================="
+echo ""
+echo "ℹ️  Code quality is enforced at commit time via pre-commit hooks"
+echo "   - ESLint validation runs before every commit"
+echo "   - Deployment focuses on build and template validation"
+echo ""
 
-# Check if ESLint dependencies are installed
-if ! npm list eslint &> /dev/null; then
-    echo "📦 Installing ESLint dependencies..."
-    npm install
+# Build TypeScript code
+echo "🔧 Compiling TypeScript files..."
+if ! npm run build; then
+    echo "❌ ERROR: TypeScript compilation failed"
+    echo "   Check the output above for compilation errors"
+    echo "   Fix TypeScript errors and re-run deployment"
+    exit 1
 fi
 
-# Run ESLint validation
-echo "   Running ESLint..."
-npm run lint
-
-echo "✅ Code quality checks passed"
+echo "✅ TypeScript compilation successful"
 echo ""
 
 # =============================================================================
-# STEP 3: Build and Validation
+# STEP 3: CDK Template Validation
 # =============================================================================
-echo "🔨 Step 3: Building and validating CDK code..."
-
-# Build TypeScript code
-echo "   Building TypeScript..."
-npm run build
+echo "📋 Step 3: Validating CDK Templates"
+echo "===================================="
+echo ""
 
 # Run CDK synth to validate CloudFormation templates
-echo "   Validating CDK templates..."
-cdk synth > /dev/null
+echo "🔍 Validating CDK templates and CloudFormation syntax..."
+if ! cdk synth > /dev/null; then
+    echo "❌ ERROR: CDK synthesis failed"
+    echo "   Check CDK code and template syntax"
+    exit 1
+fi
 
-echo "✅ Build and validation completed"
+echo "✅ CDK template validation successful"
 echo ""
 
 # =============================================================================
 # STEP 4: Deployment
 # =============================================================================
-echo "🚀 Step 4: Deploying CDK stack..."
+echo "🚀 Step 4: Deploying CDK Stack"
+echo "==============================="
+echo ""
+echo "✅ All validation checks passed:"
+echo "   ✅ Environment variables validated"
+echo "   ✅ TypeScript compilation successful"
+echo "   ✅ CDK template validation successful"
+echo ""
+echo "Proceeding with deployment..."
+echo ""
 
 # Deploy with auto-approval (following project rules)
-cdk deploy --require-approval never
+if ! cdk deploy --require-approval never; then
+    echo "❌ ERROR: CDK deployment failed"
+    echo "   Check AWS credentials and permissions"
+    exit 1
+fi
 
 echo "✅ Deployment completed successfully!"
 echo ""
@@ -155,6 +185,18 @@ else
 fi
 
 echo "🎉 Deployment completed successfully!"
+echo ""
+echo "📊 Deployment Summary:"
+echo "   ✅ TypeScript compilation: PASSED"
+echo "   ✅ CDK template validation: PASSED"
+echo "   ✅ AWS deployment: SUCCESSFUL"
+echo ""
+echo "🔍 Monitoring:"
 echo "   Monitor CloudWatch logs for webhook activity"
 echo "   Test by making a commit to $GITHUB_REPOSITORY"
+echo ""
+echo "💡 Code Quality:"
+echo "   ESLint validation enforced at commit time via pre-commit hooks"
+echo "   Use 'npm run lint' to check code quality anytime"
+echo "   Use 'npm run lint:fix' to auto-fix issues"
 echo ""
