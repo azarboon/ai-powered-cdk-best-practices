@@ -1,73 +1,31 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-echo ""
-echo "🔍 PRE-COMMIT VALIDATION (MANDATORY)"
-echo "===================================="
-echo ""
-echo "⚠️  CRITICAL REQUIREMENT: ESLint validation MUST pass before commit"
-echo "   - Code quality enforced at commit time ONLY"
-echo "   - Deployments focus on build validation for faster cycles"
-echo "   - All JavaScript and TypeScript files in bin/, lib/, lambda/"
-echo "   - TypeScript-specific rules enforced"
-echo "   - Comment standards enforced (JSDoc)"
-echo "   - Zero warnings tolerance"
-echo ""
-
-# Run comprehensive ESLint validation
-echo "🔍 Running comprehensive ESLint validation..."
-echo "   - Validating ALL JavaScript and TypeScript files"
-echo "   - Enforcing code quality standards"
-echo ""
-
-# Use the current shell's PATH to find npm
-export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
-
-# Try different ways to run npm
-if command -v npm >/dev/null 2>&1; then
-    NPM_CMD="npm"
-elif [ -f "/usr/bin/npm" ]; then
-    NPM_CMD="/usr/bin/npm"
-elif [ -f "/usr/local/bin/npm" ]; then
-    NPM_CMD="/usr/local/bin/npm"
+# Simple approach: use env to find node, with fallbacks
+if env node --version >/dev/null 2>&1; then
+    NODE_CMD="env node"
+elif /usr/bin/node --version >/dev/null 2>&1; then
+    NODE_CMD="/usr/bin/node"
 else
-    echo "❌ ERROR: npm command not found"
-    echo "Please ensure Node.js and npm are properly installed"
-    exit 1
+    # Last resort: try to source bashrc and use node
+    if [ -f "$HOME/.bashrc" ]; then
+        . "$HOME/.bashrc"
+        if command -v node >/dev/null 2>&1; then
+            NODE_CMD="node"
+        else
+            echo "❌ ERROR: Node.js not available in any form"
+            echo "Tried: env node, /usr/bin/node, sourcing ~/.bashrc"
+            exit 1
+        fi
+    else
+        echo "❌ ERROR: Node.js not found and no ~/.bashrc to source"
+        exit 1
+    fi
 fi
 
-if ! $NPM_CMD run precommit; then
-    echo ""
-    echo "❌ COMMIT BLOCKED: ESLint validation failed"
-    echo "=========================================="
-    echo ""
-    echo "🚨 CRITICAL: Code quality standards not met"
-    echo ""
-    echo "Required actions before committing:"
-    echo "1. Fix all ESLint errors shown above"
-    echo "2. Ensure all functions have proper JSDoc comments"
-    echo "3. Use proper TypeScript best practices"
-    echo ""
-    echo "🔧 Quick fix commands:"
-    echo "   npm run lint:fix    # Auto-fix ESLint issues"
-    echo "   npm run lint        # Check remaining ESLint issues"
-    echo ""
-    echo "💡 Common ESLint fixes needed:"
-    echo "   - Add JSDoc comments to functions"
-    echo "   - Fix TypeScript type annotations"
-    echo "   - Correct indentation and formatting"
-    echo "   - Use proper parameter and return documentation"
-    echo ""
-    exit 1
-fi
+# Change to project directory
+cd "$(dirname "$0")/.."
 
-echo ""
-echo "✅ ALL PRE-COMMIT CHECKS PASSED!"
-echo "================================"
-echo "   ✅ ESLint validation: PASSED (MANDATORY)"
-echo "   ✅ Code quality standards: MET"
-echo "   ✅ Comment standards: ENFORCED"
-echo ""
-echo "🎉 Commit approved - proceeding..."
-echo "💡 Note: Deployments will focus on build validation only"
-echo ""
+# Run the script
+echo "Using Node.js command: $NODE_CMD"
+exec $NODE_CMD scripts/lint-staged-files.js
