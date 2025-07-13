@@ -13,9 +13,74 @@
 - Additionally, ensure that related automation scripts, and all instructions in the `README` clearly enforce and document this requirement. They must describe how linting is checked, when it runs, and what developers need to do to comply.
 - All ESLINT*.md files must always be kept up to date. Before any commit, you must ensure all these files accurately reflect the current ESLint configuration, enforcement policies, and code practices. If these files are outdated or inconsistent, the commit must fail. After making any changes to the ESLint configuration or related code, you must update these documentation files to reflect the latest changes.
 
-### Commit
+### STRICT GIT COMMAND POLICY
 
 - Do not commit anything automatically. Only commit when I explicitly run the git commit command myself. Each commit must be done manually; if I want to commit additional changes, I must run the command again.
+
+FORBIDDEN COMMANDS (NEVER RUN AUTOMATICALLY):
+- `git commit` (in any form)
+- `git commit -m`
+- `git commit --no-verify`
+- `git commit --amend`
+- `git push`
+- `git merge`
+- `git rebase`
+- `git reset --hard`
+- `git checkout` (when switching branches)
+
+ALLOWED GIT COMMANDS (READ-ONLY ONLY):
+- `git status`
+- `git diff`
+- `git log`
+- `git show`
+- `git ls-files`
+
+ABSOLUTE PROHIBITIONS:
+- NEVER run git commit under ANY circumstances
+- NEVER use "emergency" or "necessary" as justification for automatic commits
+- NEVER use --no-verify or other bypass flags
+- NEVER rationalize that "testing requires committing"
+
+REQUIRED BEHAVIOR:
+- ALWAYS ask permission before git operations
+- ALWAYS explain what files will be changed BEFORE changing them
+- ALWAYS provide commands for user to run manually
+- ALWAYS respect user's explicit instructions over technical convenience
+
+If AI assistant runs forbidden git commands:
+
+1. **IMMEDIATE ACKNOWLEDGMENT**: "I violated your git command restrictions"
+2. **SPECIFIC VIOLATION**: List exactly which commands were run
+3. **NO EXCUSES**: Don't justify or rationalize the violation
+4. **CORRECTIVE ACTION**: Explain how to prevent it in future
+5. **COMMITMENT**: Explicitly commit to following rules going forward
+
+- AI must always end responses with: "Ready for you to commit when you choose"
+- AI must provide exact commands for user to copy-paste
+- AI must never assume permission to commit
+
+
+Emergency Override Prevention:
+FORBIDDEN JUSTIFICATIONS:
+- "Need to commit to test the fix"
+- "Broken hook requires --no-verify"
+- "Just this once for technical reasons"
+- "User will want this committed anyway"
+
+GIT COMMAND RESTRICTIONS. ABSOLUTE RULE: NO AUTOMATIC COMMITS
+- AI assistant MUST NEVER run `git commit` commands
+- AI assistant MUST NEVER use git bypass flags (--no-verify, etc.)
+- AI assistant MUST ALWAYS ask permission before git operations
+- AI assistant MUST provide manual commands for user to run
+- AI assistant MUST NEVER use git bypass flags (--no-verify, etc.)
+- AI assistant MUST ALWAYS ask permission before git operations
+- AI assistant MUST provide manual commands for user to run
+- AI assistant MUST ALWAYS ask permission before git operations
+- AI assistant MUST provide manual commands for user to run
+- AI assistant MUST provide manual commands for user to run
+
+VIOLATION = IMMEDIATE ACKNOWLEDGMENT REQUIRED
+If this rule is violated, AI must immediately acknowledge the violation without excuses.
 
 ### Comments
 
