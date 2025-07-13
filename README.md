@@ -5,10 +5,13 @@
 
 <!-- NOTE to self: start WSL terminal, update aws account id and email in .env.template, then aws configure, then run q command line -->
 
-# Repository Monitor
+# AWS CDK GitHub Monitor with AI-Assisted Best Practices in Mind
 
-This CDK application monitors the azarboon/dummy GitHub repository for new commits and reads the content of its README file. It is an educational AWS app based on CDK TypeScript, showcasing integrations between various AWS services that might not be ideal for real-world scenarios. This project was created using the Amazon Q CLI.
+This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated quality checks, automated security checks, automated documentation updates, and more.
 
+The app is developed using Amazon Q CLI. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in PROJECT_RULES.md. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a simple boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices.
+
+Once this project is finalized, I plan to use it as a foundation for other projects—particularly those focused on scrutinizing error handling and troubleshooting across multiple AWS services. As a result, this app intentionally includes various integrations between AWS services that may not represent ideal real-world architecture but serve to demonstrate and test more complex scenarios.
 
 ## TODO (for myself): AI assistant, please ignore this section and do not act on it.
 
