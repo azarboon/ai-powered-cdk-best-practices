@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Set PATH to ensure npm and node are available
+export PATH="/usr/bin:/usr/local/bin:$PATH"
+
 echo ""
 echo "🔍 PRE-COMMIT VALIDATION (MANDATORY)"
 echo "===================================="
@@ -14,20 +17,8 @@ echo "   - Comment standards enforced (JSDoc)"
 echo "   - Zero warnings tolerance"
 echo ""
 
-# Step 1: Run lint-staged for file-specific checks (includes ESLint --fix)
-echo "🔧 Step 1: Running ESLint auto-fix on staged files..."
-if ! npx lint-staged; then
-    echo ""
-    echo "❌ COMMIT BLOCKED: lint-staged encountered issues"
-    echo "   Fix the issues shown above and try committing again"
-    exit 1
-fi
-
-echo "✅ ESLint auto-fix completed on staged files"
-echo ""
-
-# Step 2: Run comprehensive ESLint validation
-echo "🔍 Step 2: Running comprehensive ESLint validation..."
+# Run comprehensive ESLint validation
+echo "🔍 Running comprehensive ESLint validation..."
 echo "   - Validating ALL JavaScript and TypeScript files"
 echo "   - Enforcing code quality standards"
 echo ""
