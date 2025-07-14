@@ -17,9 +17,27 @@
 
 ### STRICT GIT COMMAND POLICY
 
-- Do not commit anything automatically. Only commit when I explicitly run the git commit command myself. Each commit must be done manually; if I want to commit additional changes, I must run the command again.
+## 🚨 CRITICAL RULE: GIT OPERATIONS FORBIDDEN
 
-FORBIDDEN COMMANDS (NEVER RUN AUTOMATICALLY):
+### **ABSOLUTE PROHIBITION**
+- **NEVER run any git commands** (`git add`, `git commit`, `git push`, `git merge`, etc.)
+- **NEVER execute state-changing commands** without explicit permission
+- **NEVER assume permission** - always ask first
+
+### **USER-ONLY GIT OPERATIONS**
+- **Only the user runs git commands**
+
+### **VIOLATION CONSEQUENCES**
+- **I must**: Acknowledge the violation and apologize
+- **I must**: Recommit to following these rules strictly
+
+### **ALLOWED ACTIONS (NO PERMISSION NEEDED)**
+- Reading files (`fs_read`)
+- Analyzing code
+- Suggesting changes
+- Showing what commands would do (without executing)
+
+### **FORBIDDEN ACTIONS (ALWAYS NEED PERMISSION). (NEVER RUN AUTOMATICALLY)**
 
 - `git commit` (in any form)
 - `git commit -m`
