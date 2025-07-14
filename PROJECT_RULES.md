@@ -20,18 +20,22 @@
 ## 🚨 CRITICAL RULE: GIT OPERATIONS FORBIDDEN
 
 ### **ABSOLUTE PROHIBITION**
+
 - **NEVER run any git commands** (`git add`, `git commit`, `git push`, `git merge`, etc.)
 - **NEVER execute state-changing commands** without explicit permission
 - **NEVER assume permission** - always ask first
 
 ### **USER-ONLY GIT OPERATIONS**
+
 - **Only the user runs git commands**
 
 ### **VIOLATION CONSEQUENCES**
+
 - **I must**: Acknowledge the violation and apologize
 - **I must**: Recommit to following these rules strictly
 
 ### **ALLOWED ACTIONS (NO PERMISSION NEEDED)**
+
 - Reading files (`fs_read`)
 - Analyzing code
 - Suggesting changes
