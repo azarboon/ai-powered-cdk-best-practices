@@ -8,16 +8,12 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy": "npm run build && cdk deploy",
+    "deploy": "npm run validate && cdk deploy",
     "destroy": "cdk destroy",
-    "lint": "echo '🔍 Running ESLint validation on all JS/TS files...' && eslint bin/ lib/ lambda/ --ext .js,.ts --max-warnings 0",
-    "lint:fix": "echo '🔧 Running ESLint auto-fix on all JS/TS files...' && eslint bin/ lib/ lambda/ --ext .js,.ts --fix",
-    "lint:check": "echo '📋 Checking ESLint compliance (zero tolerance)...' && npm run lint:fix && npm run lint",
-    "validate": "echo '🚀 Starting build and CDK validation...' && npm run build && cdk synth",
-    "precommit": "npm run lint:check",
-    "lint-staged-files": "node scripts/lint-staged-files.js",
-    "prepare": "husky install",
-    "pre-commit": "lint-staged"
+    "lint": "eslint . --ext .js,.ts --max-warnings 0",
+    "lint:fix": "eslint . --ext .js,.ts --fix",
+    "validate": "npm run build && cdk synth",
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@types/jest": "^29.4.0",
@@ -40,28 +36,11 @@
     "constructs": "^10.0.0"
   },
   "lint-staged": {
-    "bin/**/*.{js,ts}": [
-      "echo '🔍 Validating TypeScript files in bin/ directory...'",
-      "eslint --fix --max-warnings 0",
-      "echo '✅ bin/ directory validation passed'"
-    ],
-    "lib/**/*.{js,ts}": [
-      "echo '🔍 Validating TypeScript files in lib/ directory...'",
-      "eslint --fix --max-warnings 0",
-      "echo '✅ lib/ directory validation passed'"
-    ],
-    "lambda/**/*.{js,ts}": [
-      "echo '🔍 Validating JavaScript files in lambda/ directory...'",
-      "eslint --fix --max-warnings 0",
-      "echo '✅ lambda/ directory validation passed'"
+    "**/*.{js,ts}": [
+      "eslint --fix --max-warnings 0"
     ],
     "*.{json,md}": [
       "prettier --write"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
   }
 }

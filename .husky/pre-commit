@@ -78,17 +78,17 @@ fi
 echo "✅ Found npm: $NPM_CMD"
 echo ""
 
-# Run ESLint validation based on environment
+# Run lint-staged based on environment
 case "$NPM_CMD" in
     "wsl_npm")
         echo "🔄 Running via WSL (Git Bash detected)..."
         # Use current directory path instead of hardcoded path
         CURRENT_DIR=$(pwd)
         WSL_PATH=$(echo "$CURRENT_DIR" | sed 's|^/mnt/c|/c|' | sed 's|^/c|/mnt/c|')
-        wsl -e bash -c "cd '$WSL_PATH' && npm run lint-staged-files"
+        wsl -e bash -c "cd '$WSL_PATH' && npx lint-staged"
         ;;
     *)
-        echo "🔄 Running ESLint validation..."
-        $NPM_CMD run lint-staged-files
+        echo "🔄 Running lint-staged validation..."
+        npx lint-staged
         ;;
 esac
