@@ -472,7 +472,6 @@ export class GitHubMonitorStack extends cdk.Stack {
       value: gitDiffTopic.topicArn,
       description: 'SNS Topic ARN for git diff notifications',
       exportName: 'GitDiffNotificationTopicArn'
-      
     });
   }
 }
