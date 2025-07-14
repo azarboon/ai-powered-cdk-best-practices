@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "noEmit": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo"
+  },
+  "include": ["bin/**/*", "lib/**/*"],
+  "exclude": ["cdk.out", "**/*.d.ts", "node_modules"]
+}

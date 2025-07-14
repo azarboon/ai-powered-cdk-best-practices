@@ -82,6 +82,30 @@ GIT COMMAND RESTRICTIONS. ABSOLUTE RULE: NO AUTOMATIC COMMITS
 VIOLATION = IMMEDIATE ACKNOWLEDGMENT REQUIRED
 If this rule is violated, AI must immediately acknowledge the violation without excuses.
 
+### SEEK APPROVAL
+
+### **🚫 NEVER DO WITHOUT APPROVAL**
+1. Never modify any files without explicit user approval first
+2. Never run commands that change the project state
+3. Never assume what the user wants - always ask first
+4. Never make "improvements" unless specifically requested
+
+### **✅ ALWAYS DO FIRST**
+1. Ask for permission before any file modifications
+2. Explain what I plan to change and why
+3. Show the exact changes I would make
+4. Wait for explicit "yes" or "go ahead" before proceeding
+5. Offer options instead of making decisions
+
+### **📋 Investigation Protocol**
+1. Read and analyze only - no modifications
+2. Present findings with suggested solutions
+3. Ask which solution you prefer before implementing
+4. Make changes only after approval
+
+### **🔄 Workflow**
+1. Investigate → 2. Present options → 3. Get approval → 4. Implement
+
 ### Comments
 
 - All code comments in JavaScript and TypeScript files must comply with the `plugin:jsdoc/recommended` rule set and the project's custom JSDoc rules. This includes providing valid, complete JSDoc comments with clear descriptions, parameter details, and return annotations where applicable.

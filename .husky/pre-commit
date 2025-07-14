@@ -6,26 +6,20 @@ cd "$(dirname "$0")/.."
 
 # Function to find npm/npx
 find_npm() {
-    # Method 1: Try npx directly
     if command -v npx >/dev/null 2>&1; then
         echo "npx"
         return 0
     fi
-    
-    # Method 2: Try npm directly
     if command -v npm >/dev/null 2>&1; then
         echo "npm"
         return 0
     fi
-    
-    # Method 3: Try WSL from Git Bash
     if command -v wsl >/dev/null 2>&1; then
         if wsl -e bash -c "command -v npx" >/dev/null 2>&1; then
             echo "wsl_npx"
             return 0
         fi
     fi
-    
     return 1
 }
 
@@ -36,17 +30,29 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run lint-staged based on environment
+echo "⚡ Ultra-fast pre-commit validation..."
+
+# Run lint-staged with 10-second timeout for ultra-fast failure
 case "$CMD" in
     "npx")
-        npx lint-staged
+        timeout 10s npx lint-staged
         ;;
     "npm")
-        npm run lint-staged
+        timeout 10s npm run lint-staged
         ;;
     "wsl_npx")
         CURRENT_DIR=$(pwd)
         WSL_PATH=$(echo "$CURRENT_DIR" | sed 's|^/mnt/c|/c|' | sed 's|^/c|/mnt/c|')
-        wsl -e bash -c "cd '$WSL_PATH' && npx lint-staged"
+        timeout 10s wsl -e bash -c "cd '$WSL_PATH' && npx lint-staged"
         ;;
 esac
+
+# Check if timeout occurred
+if [ $? -eq 124 ]; then
+    echo ""
+    echo "❌ VALIDATION TIMEOUT (10 seconds)"
+    echo "💡 Syntax error detected - ESLint cannot parse your code"
+    echo "💡 Fix syntax errors first, then commit"
+    echo ""
+    exit 1
+fi

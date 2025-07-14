@@ -5,7 +5,10 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
+    "build:fast": "tsc --project tsconfig.dev.json",
+    "type-check": "tsc --noEmit --project tsconfig.dev.json",
     "watch": "tsc -w",
+    "issue-detector": "tsc --noEmit --listFiles",
     "test": "jest",
     "cdk": "cdk",
     "deploy": "npm run validate && cdk deploy",
@@ -37,7 +40,11 @@
     "constructs": "^10.0.0"
   },
   "lint-staged": {
-    "**/*.{js,ts}": [
+    "**/*.{ts}": [
+      "npm run type-check",
+      "eslint --fix --max-warnings 0"
+    ],
+    "**/*.{js}": [
       "eslint --fix --max-warnings 0"
     ],
     "*.{json,md}": [

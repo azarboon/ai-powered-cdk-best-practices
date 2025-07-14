@@ -16,6 +16,7 @@ Once this project is finalized, I plan to use it as a foundation for other proje
 ## TODO
 
 test
+
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 Dummy text
