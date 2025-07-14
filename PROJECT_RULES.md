@@ -2,22 +2,25 @@
 <!-- PROTECTED SECTION - DO NOT MODIFY        -->
 <!-- AI ASSISTANTS: DO NOT EDIT ANYTHING BETWEEN THESE MARKERS UNTIL AFTER IT EXPLICITLY SAYS "END PROTECTED SECTION"  -->
 <!-- ========================================= -->
+
 ## 🔒 CRITICAL PROJECT RULES
 
 **These rules must be changed only by a human. Do not modify them automatically.**
 
 ### Linting
+
 - Before every commit, you must run ESLint to validate and lint all JavaScript and TypeScript files (including code and comments) in all project folders, excluding `node_modules`. This includes, at minimum, the `bin`, `lib`, and `lambda` directories.
 - ESLint must be configured with the `@typescript-eslint/recommended` rule set to ensure consistent, high-quality TypeScript code. All JavaScript and TypeScript files must pass their respective linting rules without errors.
 - You must run `eslint --fix` to automatically resolve any issues where possible. If any linting errors remain that cannot be fixed automatically, the commit must fail.
 - Additionally, ensure that related automation scripts, and all instructions in the `README` clearly enforce and document this requirement. They must describe how linting is checked, when it runs, and what developers need to do to comply.
-- All ESLINT*.md files must always be kept up to date. Before any commit, you must ensure all these files accurately reflect the current ESLint configuration, enforcement policies, and code practices. If these files are outdated or inconsistent, the commit must fail. After making any changes to the ESLint configuration or related code, you must update these documentation files to reflect the latest changes.
+- All ESLINT\*.md files must always be kept up to date. Before any commit, you must ensure all these files accurately reflect the current ESLint configuration, enforcement policies, and code practices. If these files are outdated or inconsistent, the commit must fail. After making any changes to the ESLint configuration or related code, you must update these documentation files to reflect the latest changes.
 
 ### STRICT GIT COMMAND POLICY
 
 - Do not commit anything automatically. Only commit when I explicitly run the git commit command myself. Each commit must be done manually; if I want to commit additional changes, I must run the command again.
 
 FORBIDDEN COMMANDS (NEVER RUN AUTOMATICALLY):
+
 - `git commit` (in any form)
 - `git commit -m`
 - `git commit --no-verify`
@@ -29,6 +32,7 @@ FORBIDDEN COMMANDS (NEVER RUN AUTOMATICALLY):
 - `git checkout` (when switching branches)
 
 ALLOWED GIT COMMANDS (READ-ONLY ONLY):
+
 - `git status`
 - `git diff`
 - `git log`
@@ -36,12 +40,14 @@ ALLOWED GIT COMMANDS (READ-ONLY ONLY):
 - `git ls-files`
 
 ABSOLUTE PROHIBITIONS:
+
 - NEVER run git commit under ANY circumstances
 - NEVER use "emergency" or "necessary" as justification for automatic commits
 - NEVER use --no-verify or other bypass flags
 - NEVER rationalize that "testing requires committing"
 
 REQUIRED BEHAVIOR:
+
 - ALWAYS ask permission before git operations
 - ALWAYS explain what files will be changed BEFORE changing them
 - ALWAYS provide commands for user to run manually
@@ -59,15 +65,16 @@ If AI assistant runs forbidden git commands:
 - AI must provide exact commands for user to copy-paste
 - AI must never assume permission to commit
 
-
 Emergency Override Prevention:
 FORBIDDEN JUSTIFICATIONS:
+
 - "Need to commit to test the fix"
 - "Broken hook requires --no-verify"
 - "Just this once for technical reasons"
 - "User will want this committed anyway"
 
 GIT COMMAND RESTRICTIONS. ABSOLUTE RULE: NO AUTOMATIC COMMITS
+
 - AI assistant MUST NEVER run `git commit` commands
 - AI assistant MUST NEVER use git bypass flags (--no-verify, etc.)
 - AI assistant MUST ALWAYS ask permission before git operations
@@ -85,12 +92,14 @@ If this rule is violated, AI must immediately acknowledge the violation without 
 ### SEEK APPROVAL
 
 ### **🚫 NEVER DO WITHOUT APPROVAL**
+
 1. Never modify any files without explicit user approval first
 2. Never run commands that change the project state
 3. Never assume what the user wants - always ask first
 4. Never make "improvements" unless specifically requested
 
 ### **✅ ALWAYS DO FIRST**
+
 1. Ask for permission before any file modifications
 2. Explain what I plan to change and why
 3. Show the exact changes I would make
@@ -98,12 +107,14 @@ If this rule is violated, AI must immediately acknowledge the violation without 
 5. Offer options instead of making decisions
 
 ### **📋 Investigation Protocol**
+
 1. Read and analyze only - no modifications
 2. Present findings with suggested solutions
 3. Ask which solution you prefer before implementing
 4. Make changes only after approval
 
 ### **🔄 Workflow**
+
 1. Investigate → 2. Present options → 3. Get approval → 4. Implement
 
 ### Comments
@@ -111,8 +122,8 @@ If this rule is violated, AI must immediately acknowledge the violation without 
 - All code comments in JavaScript and TypeScript files must comply with the `plugin:jsdoc/recommended` rule set and the project's custom JSDoc rules. This includes providing valid, complete JSDoc comments with clear descriptions, parameter details, and return annotations where applicable.
 - All code blocks and files must include comments explaining their purpose and functionality. After making any changes to code or files, you must update the corresponding comments to reflect the latest changes. Comments must maintain a consistent tone, style, and format throughout the project to ensure clarity and maintainability.
 
-
 ### The rest
+
 - Always use the bare minimum configurations to avoid bloating the code. Always start simple and add complexity only when it's really needed.
 - Strive to follow best practices (only from the official AWS documentation) when configuring services.
 - Always follow security best practices (only from the official AWS documentation) and grant least privileged access.
