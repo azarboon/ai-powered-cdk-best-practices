@@ -13,6 +13,7 @@
     "lint": "eslint . --ext .js,.ts --max-warnings 0",
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "validate": "npm run build && cdk synth",
+    "lint-staged": "lint-staged",
     "prepare": "husky install"
   },
   "devDependencies": {
