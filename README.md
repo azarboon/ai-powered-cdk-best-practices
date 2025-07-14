@@ -445,10 +445,8 @@ You can also use these instead of `CDK_DEFAULT_*`:
 ## 💰 Cost Optimization
 
 - **Minimal Configuration**: 256MB memory, 30s timeouts
-- **Pay-per-Use Services**: EventBridge, Step Functions, API Gateway, SNS
 - **Log Retention**: 1-week retention to control storage costs
 - **Early Returns**: Webhook receiver exits early for ignored events
-- **Efficient Processing**: No unnecessary data processing or storage
 - **Resource Tagging**: All resources tagged for cost tracking
 
 ## 🚀 Deployment Guide
@@ -518,11 +516,6 @@ Make a commit to the repository and verify webhook delivery in GitHub settings.
 
 ## 📊 Monitoring
 
-### CloudWatch Log Groups
-- **Webhook Receiver**: `/aws/lambda/GitHubMonitorStack-WebhookReceiverFunction*`
-- **Git Diff Processor**: `/aws/lambda/GitHubMonitorStack-GitDiffProcessorFunction*`
-- **Step Functions**: `/aws/stepfunctions/GitHubDiffStateMachine`
-
 ### What You'll See in Logs
 - ✅ **Webhook Processing**: Repository info, commit count, event filtering
 - ✅ **Git Diff Processing**: Commit details, file changes, API responses
@@ -540,24 +533,6 @@ curl -X POST https://your-webhook-url/webhook \
     "repository": {"full_name": "your-username/your-repo"},
     "commits": [{"id": "test-commit-id", "message": "Test commit"}]
   }'
-```
-
-### Test Step Function Directly
-1. Go to **AWS Step Functions Console**
-2. Find `GitHubDiffStateMachine`
-3. **Start Execution** with sample input:
-```json
-{
-  "repository": {
-    "full_name": "your-username/your-repo"
-  },
-  "commits": [
-    {
-      "id": "actual-commit-sha",
-      "message": "Test commit message"
-    }
-  ]
-}
 ```
 
 ## 🗂️ Project Structure
@@ -584,10 +559,10 @@ curl -X POST https://your-webhook-url/webhook \
 
 ### Code Quality
 - **ESLint Validation**: All code must pass linting before commits (not deployments)
-- **Environment Variables**: No hardcoded values allowed
+- **Environment Variables**: No hardcoded values allowed <!-- verify this -->
 - **Comprehensive Comments**: Every component and function documented
 - **Security First**: Least privilege access, no credential exposure
-- **Cost Conscious**: Efficient resource usage and retention policies
+
 
 ### Available NPM Scripts
 ```bash
@@ -621,34 +596,5 @@ This will delete:
 - CloudWatch log groups
 - IAM roles and policies
 
-## 🚨 Important Notes
 
-- **No Credentials in Git**: This project contains no hardcoded credentials
-- **Environment Variable Driven**: All configuration through `.env` file
-- **Repository Configurable**: Can monitor any GitHub repository
-- **Region Configurable**: Deploy to any AWS region (us-east-1 recommended)
-- **Cost Effective**: Designed for minimal AWS costs with appropriate limits
-- **Production Ready**: Follows AWS best practices for security and reliability
 
-## 📞 Support
-
-For issues or questions:
-1. Check CloudWatch logs for error details
-2. Verify GitHub webhook delivery status
-3. Test Step Functions manually for debugging
-4. Review IAM permissions if access issues occur
-5. Validate environment variables are correctly set
-
-## 🎯 Features
-
-- **Real-time Git Diff Notifications**: Get email alerts with detailed commit changes
-- **Configurable Repository Monitoring**: Monitor any GitHub repository
-- **Secure Architecture**: No hardcoded credentials, least privilege access
-- **Cost Optimized**: Pay-per-use serverless architecture
-- **Easy Deployment**: Automated deployment script with validation
-- **Comprehensive Logging**: Full observability with CloudWatch
-- **Environment Flexible**: Deploy to any AWS account/region
-
----
-
-**Created with Amazon Q CLI** - Following AWS best practices for security, cost optimization, and configuration management# Test commit
