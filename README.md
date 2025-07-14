@@ -46,11 +46,79 @@ https://docs.aws.amazon.com/cdk/v2/guide/best-practices.html
 
 You can update the project rules by editing the `./PROJECT_RULES.md` file.
 
+## Setup
+
+For development, I use VS Code installed on Microsoft Windows 10. I mainly use the integrated **WSL terminal in VS Code**. 
+
+## 🐧 Terminal
+
+Here are my settings to replicate my environment.
+
+
+**WSL Info**:
+  - Distro: Ubuntu on WSL 2
+  - Default shell: Bash (`/bin/bash`)
+
+**.bashrc Key Settings**:
+  ```bash
+  export NPM_CONFIG_PREFIX="$HOME/.npm-global"
+  export PATH="$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+  export PATH=$(echo $PATH | tr ':' '\n' | grep -v "/mnt/c/Users/YOUR_USERNAME/AppData/Roaming/npm" | tr '\n' ':' | sed 's/:$//')
+  export GIT_ASKPASS="/mnt/c/Windows/System32/cmd.exe"
+  export GIT_CREDENTIAL_HELPER="wincred"
+
+  alias ll='ls -alF'
+  alias aws-version='aws --version'
+  alias cdk-version='cdk --version'
+ ```
+
+
+## ESLint Code Quality checks
+
+ALL JavaScript and TypeScript files MUST pass ESLint validation before every commit. There is a zero warning tolerance. However, not during deployment and I decided to do it for faster troubleshooting and development. You can find details in `.eslintrc.json` file.
+
+
+ESLint checks the quality of code and comments. You can find all relevant details in the **ESLINT_*.md** files located in the project root.## Setup
+
+For development, I use VS Code installed on Microsoft Windows 10. I mainly use the integrated **WSL terminal in VS Code**. 
+
+## 🐧 Terminal
+
+Here are my settings to replicate my environment.
+
+
+**WSL Info**:
+  - Distro: Ubuntu on WSL 2
+  - Default shell: Bash (`/bin/bash`)
+
+**.bashrc Key Settings**:
+  ```bash
+  export NPM_CONFIG_PREFIX="$HOME/.npm-global"
+  export PATH="$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+  export PATH=$(echo $PATH | tr ':' '\n' | grep -v "/mnt/c/Users/YOUR_USERNAME/AppData/Roaming/npm" | tr '\n' ':' | sed 's/:$//')
+  export GIT_ASKPASS="/mnt/c/Windows/System32/cmd.exe"
+  export GIT_CREDENTIAL_HELPER="wincred"
+
+  alias ll='ls -alF'
+  alias aws-version='aws --version'
+  alias cdk-version='cdk --version'
+ ```
+
+
+## ESLint Code Quality checks
+
+ALL JavaScript and TypeScript files MUST pass ESLint validation before every commit. There is a zero warning tolerance. However, not during deployment and I decided to do it for faster troubleshooting and development. You can find details in `.eslintrc.json` file.
+
+
+ESLint checks the quality of code and comments. You can find all relevant details in the **ESLINT_*.md** files located in the project root.
 <!-- ========================================= -->
 <!-- END PROTECTED SECTION                    -->
 <!-- ========================================= -->
 
-## 🔍 **ESLint Code Quality Requirements**
+
+
+
+--------------------------
 
 ### **⚠️ COMMIT-TIME ENFORCEMENT**
 **ALL JavaScript and TypeScript files MUST pass ESLint validation before every commit. Deployments focus on build and template validation for faster cycles.**
