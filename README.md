@@ -122,10 +122,8 @@ npm run validate
 
 1. **Write code** following TypeScript best practices
 2. **Run `npm run lint:fix`** to auto-fix issues
-3. **Run `npm run lint`** to check remaining issues
-4. **Fix any remaining issues manually**
-5. **Commit** - pre-commit hook validates automatically
-6. **Deploy** - deployment script validates build only
+3. **Fix any remaining issues manually**
+4. **Commit** - pre-commit hook validates linting
 
 
 
