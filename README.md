@@ -190,7 +190,7 @@ Configure environment variables in .env:
    npm install
    ```
 
-@mahdi: check if deploy.sh is needed. if not, remove it
+@mahdi: try to deploy manually to check if deploy.sh is needed. if not, remove it
 2. **Deploy using automated script (Recommended):**
 
    ```bash
