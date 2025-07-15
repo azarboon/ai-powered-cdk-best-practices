@@ -271,7 +271,7 @@ cdk destroy
 ### Development Workflow
 
 - **Before changes:** `npm run validate` (runs build + synth, no linting)
-- **Code quality:** `npm run lint` or `npm run lint:fix` (enforced at commit time)
+- **Code quality:** `npm run lint:fix` (enforced at commit time)
 - **Build only:** `npm run build`
 - **Deploy with validation:** `npm run deploy` (build + deploy, no linting)
 

@@ -21,15 +21,12 @@ credentials
 config
 
 # =============================================================================
-# BUILD ARTIFACTS - Generated files
+# BUILD ARTIFACTS - Generated files (ALL compiled TypeScript)
 # =============================================================================
-# Compiled JavaScript files (exclude from linting)
-bin/*.js
-lib/*.js
+# All compiled JavaScript and TypeScript declaration files
+*.js
 *.d.ts
-
-# Keep Lambda JavaScript files (source code)
-!lambda/*.js
+*.js.map
 
 # CDK build outputs
 cdk.out/
@@ -151,13 +148,7 @@ credentials.json
 # =============================================================================
 # AWS CDK Build Artifacts
 # =============================================================================
-# CDK build output
-*.js
-*.js.map
-*.d.ts
-!jest.config.js
-
-# CDK staging and output directories
+# CDK build output and staging directories
 .cdk.staging/
 cdk.out/
 cdk.context.json
