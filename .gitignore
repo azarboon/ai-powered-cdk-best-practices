@@ -28,6 +28,12 @@ config
 **/*.d.ts
 **/*.js.map
 
+# TypeScript build cache
+*.tsbuildinfo
+
+# ESLint cache
+.eslintcache
+
 # CDK build outputs
 cdk.out/
 .cdk.staging/
