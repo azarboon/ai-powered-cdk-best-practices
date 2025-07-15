@@ -7,11 +7,15 @@
 
 # AWS CDK GitHub Monitor with AI-Assisted Best Practices in Mind
 
-This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated quality checks, automated security checks, automated documentation updates, and more.
+This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated code quality checks, automated security checks, automated documentation updates.
 
-The app is developed using Amazon Q CLI. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in PROJECT_RULES.md. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a simple boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices.
+The app is developed using Amazon Q CLI. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in PROJECT_RULES.md. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a simple boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices. 
 
 Once this project is finalized, I plan to use it as a foundation for other projects—particularly those focused on scrutinizing error handling and troubleshooting across multiple AWS services. As a result, this app intentionally includes various integrations between AWS services that may not represent ideal real-world architecture but serve to demonstrate and test more complex scenarios.
+
+## Warning
+
+Given the unpredictable behavior of Amazon Q CLI, there have been instances where unintended changes were committed. I address and correct these issues as they arise.
 
 ## TODO
 
@@ -75,18 +79,17 @@ alias cdk-version='cdk --version'
 
 ALL JavaScript and TypeScript files MUST pass ESLint validation before every commit, with zero warning tolerance. This strict check does not run during deployment—I chose this for faster troubleshooting and development. See `.eslintrc.json` for details.
 
-ESLint ensures code and comment quality on all changed JS and TS files using `lint-staged`. You can find all relevant details in the ESLINT\_\*.md files located in the project root.
+ESLint ensures code and comment quality on all JS and TS files in the project using a simplified, fast configuration with caching enabled for optimal performance. You can find all relevant details in the ESLINT\_\*.md files located in the project root.
 
 The pre-commit hook uses Husky. Below you can find more about its configuration and pre-commit flow.
 
 ### Eslint requirements
 
-- **Function Documentation**: All functions must have JSDoc comments
-- **Parameter Documentation**: All parameters must be documented
-- **Return Documentation**: All return values must be documented
-- **Complete Sentences**: Comments must end with periods
-- **TypeScript Best Practices**: Proper types, nullish coalescing, etc.
-- **Consistent Formatting**: Indentation, quotes, semicolons
+- **Code Formatting**: Consistent indentation, quotes, and semicolons
+- **Best Practices**: Modern JavaScript/TypeScript patterns (prefer-const, no-var)
+- **Syntax Validation**: TypeScript syntax checking without type-aware rules
+- **Unused Variables**: Detection with underscore prefix ignore pattern
+- **Performance Optimized**: Caching enabled for fast subsequent runs (~20 seconds)
 
 ## Setup
 
@@ -124,10 +127,10 @@ alias cdk-version='cdk --version'
 ### **🔧 ESLint Commands**
 
 ```bash
-# Check all files for linting issues
+# Check all files for linting issues (with caching)
 npm run lint
 
-# Auto-fix issues where possible
+# Auto-fix issues where possible (with caching)
 npm run lint:fix
 
 # Complete validation pipeline (build + synth, no linting)
@@ -141,13 +144,11 @@ npm run validate
 **Pre-commit Flow**:
 
 1. `git commit` → `.husky/pre-commit` script
-2. Detects environment (WSL/Git Bash/Linux)
-3. Runs `npx lint-staged` on staged files only
-4. ESLint validates JS/TS (`--fix --max-warnings 0`)
-5. Prettier formats JSON/MD
-6. Blocks commit if validation fails
+2. Runs `npm run lint:fix` directly on all project files 
+3. ESLint validates all JS/TS files with caching (`--max-warnings 0 --cache`)
+5. Blocks commit if linting fails 
 
-**Modern Approach**: File-based hooks in `.husky/` instead of package.json config. No traditional `.git/hooks/` - everything redirected through Husky's path override.### **❌ What Happens if ESLint Fails**
+**Modern Approach**: File-based hooks in `.husky/` instead of package.json config. Direct ESLint execution with comprehensive project-wide validation and caching for optimal performance.### **❌ What Happens if ESLint Fails**
 
 - **Commits are BLOCKED** - cannot commit with linting errors
 - **Deployments proceed** - ESLint not enforced during deployment
@@ -155,7 +156,7 @@ npm run validate
 
 ### **🚀 Developer Workflow**
 
-1. **Write code** with proper JSDoc comments
+1. **Write code** following TypeScript best practices
 2. **Run `npm run lint:fix`** to auto-fix issues
 3. **Run `npm run lint`** to check remaining issues
 4. **Fix any remaining issues manually**
@@ -166,13 +167,13 @@ npm run validate
 
 ```bash
 # If commit is blocked by ESLint:
-npm run lint:fix    # Auto-fix what's possible
-npm run lint        # See remaining issues
+npm run lint:fix    # Auto-fix what's possible (with caching)
+npm run lint        # See remaining issues (with caching)
 # Fix remaining issues manually, then commit again
 
 # If you need to check code quality before deployment:
-npm run lint:fix    # Auto-fix what's possible
-npm run lint        # Verify all issues resolved
+npm run lint:fix    # Auto-fix what's possible (with caching)
+npm run lint        # Verify all issues resolved (with caching)
 ./deploy.sh         # Deploy (no ESLint validation during deployment)
 ```
 
@@ -511,11 +512,10 @@ curl -X POST https://your-webhook-url/webhook \
 
 ```bash
 npm run build          # Build TypeScript code
-npm run lint           # Run ESLint validation
-npm run lint:fix       # Auto-fix ESLint issues
+npm run lint           # Run ESLint validation (with caching)
+npm run lint:fix       # Auto-fix ESLint issues (with caching)
 npm run validate       # Run build + CDK synth (no linting)
 npm run deploy         # Deploy with build validation (no linting)
-npm run precommit      # Pre-commit validation hook (includes linting)
 ```
 
 ### Deployment Process

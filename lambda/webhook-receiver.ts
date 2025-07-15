@@ -23,7 +23,7 @@
  * - ENVIRONMENT: Environment tag for logging context.
  */
 
-const { EventBridgeClient, PutEventsCommand } = require('@aws-sdk/client-eventbridge');
+import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 
 /**
  * Initialize EventBridge client with current region.
@@ -37,17 +37,58 @@ const TARGET_REPOSITORY = process.env.GITHUB_REPOSITORY || 'azarboon/dummy';
 const ENVIRONMENT = process.env.ENVIRONMENT || 'dev';
 
 /**
+ * API Gateway event interface.
+ */
+interface APIGatewayEvent {
+  body: string;
+  headers: Record<string, string>;
+}
+
+/**
+ * GitHub webhook payload interface.
+ */
+interface GitHubWebhookPayload {
+  repository?: {
+    full_name: string;
+  };
+  commits?: Array<{
+    id: string;
+    message: string;
+    author?: {
+      name: string;
+    };
+    timestamp: string;
+    url: string;
+  }>;
+  pusher?: {
+    name: string;
+    email: string;
+  };
+  ref?: string;
+  before?: string;
+  after?: string;
+}
+
+/**
+ * Lambda response interface.
+ */
+interface LambdaResponse {
+  statusCode: number;
+  body: string;
+}
+
+/**
  * Main Lambda handler function.
  * 
- * @param {object} event - API Gateway event from GitHub webhook.
- * @returns {Promise<object>} HTTP response for GitHub webhook.
+ * @param event - API Gateway event from GitHub webhook.
+ * @returns HTTP response for GitHub webhook.
  */
-exports.handler = async (event) => {
+export const handler = async (event: APIGatewayEvent): Promise<LambdaResponse> => {
   console.log(`[${ENVIRONMENT}] Webhook received:`, JSON.stringify(event, null, 2));
     
   try {
     // Parse the GitHub webhook payload
-    const body = JSON.parse(event.body);
+    const body: GitHubWebhookPayload = JSON.parse(event.body);
     const headers = event.headers;
         
     // API Gateway converts headers to lowercase, so check for both cases
@@ -113,14 +154,15 @@ exports.handler = async (event) => {
     };
         
   } catch (error) {
-    console.error(`[${ENVIRONMENT}] Error processing webhook:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[${ENVIRONMENT}] Error processing webhook:`, errorMessage);
         
     // Return error response to GitHub (will trigger webhook retry)
     return {
       statusCode: 500,
       body: JSON.stringify({ 
         error: 'Internal server error',
-        message: error.message,
+        message: errorMessage,
         environment: ENVIRONMENT
       })
     };

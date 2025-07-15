@@ -3,3 +3,8 @@ cdk.out/
 dist/
 build/
 aws/
+
+# Compiled TypeScript files
+bin/*.js
+lib/*.js
+*.d.ts

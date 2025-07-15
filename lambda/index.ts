@@ -21,7 +21,7 @@
  * - ENVIRONMENT: Environment tag for logging context.
  */
 
-const https = require('https');
+import * as https from 'https';
 
 /**
  * Configuration from environment variables - no hardcoded values.
@@ -30,12 +30,79 @@ const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY || 'azarboon/dummy';
 const ENVIRONMENT = process.env.ENVIRONMENT || 'dev';
 
 /**
+ * GitHub commit interface.
+ */
+interface GitHubCommit {
+  id: string;
+  message: string;
+  author?: {
+    name: string;
+  };
+  timestamp: string;
+  url: string;
+}
+
+/**
+ * GitHub repository interface.
+ */
+interface GitHubRepository {
+  full_name?: string;
+}
+
+/**
+ * Step Functions event interface.
+ */
+interface StepFunctionsEvent {
+  detail?: {
+    commits?: GitHubCommit[];
+    repository?: GitHubRepository;
+  };
+  commits?: GitHubCommit[];
+  repository?: GitHubRepository;
+}
+
+/**
+ * GitHub API commit response interface.
+ */
+interface GitHubCommitData {
+  files?: Array<{
+    filename: string;
+    status: string;
+    additions: number;
+    deletions: number;
+    patch?: string;
+  }>;
+}
+
+/**
+ * Processed commit diff interface.
+ */
+interface CommitDiff {
+  id: string;
+  message: string;
+  author: string;
+  timestamp: string;
+  url: string;
+  diff: string;
+}
+
+/**
+ * Lambda response interface.
+ */
+interface LambdaResponse {
+  statusCode: number;
+  subject: string;
+  message: string;
+  environment?: string;
+}
+
+/**
  * Main Lambda handler function.
  * 
- * @param {object} event - Step Functions input event containing commit information.
- * @returns {Promise<object>} Response with git diff data formatted for SNS.
+ * @param event - Step Functions input event containing commit information.
+ * @returns Response with git diff data formatted for SNS.
  */
-exports.handler = async (event) => {
+export const handler = async (event: StepFunctionsEvent): Promise<LambdaResponse> => {
   console.log(`[${ENVIRONMENT}] Event received:`, JSON.stringify(event, null, 2));
     
   try {
@@ -57,7 +124,7 @@ exports.handler = async (event) => {
     }
         
     // Process each commit and fetch its diff
-    const commitDiffs = [];
+    const commitDiffs: CommitDiff[] = [];
         
     for (const commit of commits.slice(0, 5)) { // Limit to 5 commits to avoid large emails
       console.log(`[${ENVIRONMENT}] Processing commit:`, commit.id);
@@ -73,14 +140,15 @@ exports.handler = async (event) => {
           diff: formatDiff(commitData)
         });
       } catch (error) {
-        console.error(`[${ENVIRONMENT}] Error processing commit ${commit.id}:`, error.message);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[${ENVIRONMENT}] Error processing commit ${commit.id}:`, errorMessage);
         commitDiffs.push({
           id: commit.id,
           message: commit.message,
           author: commit.author?.name || 'Unknown',
           timestamp: commit.timestamp,
           url: commit.url,
-          diff: `Error fetching diff: ${error.message}`
+          diff: `Error fetching diff: ${errorMessage}`
         });
       }
     }
@@ -101,13 +169,14 @@ exports.handler = async (event) => {
     };
         
   } catch (error) {
-    console.error(`[${ENVIRONMENT}] Error processing git diffs:`, error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[${ENVIRONMENT}] Error processing git diffs:`, errorMessage);
         
     // Return error response formatted for SNS
     return {
       statusCode: 500,
       subject: 'GitHub Monitor: Error Processing Commits',
-      message: `Error occurred while processing git differences:\n\nEnvironment: ${ENVIRONMENT}\nError: ${error.message}`
+      message: `Error occurred while processing git differences:\n\nEnvironment: ${ENVIRONMENT}\nError: ${errorMessage}`
     };
   }
 };
@@ -115,11 +184,11 @@ exports.handler = async (event) => {
 /**
  * Fetches commit data including diff from GitHub API.
  * 
- * @param {string} repositoryName - Repository name (e.g., 'owner/repo').
- * @param {string} commitSha - Commit SHA hash.
- * @returns {Promise<object>} Commit data with files and changes.
+ * @param repositoryName - Repository name (e.g., 'owner/repo').
+ * @param commitSha - Commit SHA hash.
+ * @returns Commit data with files and changes.
  */
-function fetchCommitData(repositoryName, commitSha) {
+function fetchCommitData(repositoryName: string, commitSha: string): Promise<GitHubCommitData> {
   return new Promise((resolve, reject) => {
     // Use environment variable for API base URL construction
     const url = `https://api.github.com/repos/${repositoryName}/commits/${commitSha}`;
@@ -146,13 +215,14 @@ function fetchCommitData(repositoryName, commitSha) {
       response.on('end', () => {
         try {
           if (response.statusCode === 200) {
-            const jsonData = JSON.parse(data);
+            const jsonData = JSON.parse(data) as GitHubCommitData;
             resolve(jsonData);
           } else {
             reject(new Error(`GitHub API returned status ${response.statusCode}: ${data}`));
           }
         } catch (parseError) {
-          reject(new Error(`Failed to parse GitHub API response: ${parseError.message}`));
+          const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+          reject(new Error(`Failed to parse GitHub API response: ${errorMessage}`));
         }
       });
     });
@@ -173,10 +243,10 @@ function fetchCommitData(repositoryName, commitSha) {
 /**
  * Formats commit diff data for email display.
  * 
- * @param {object} commitData - GitHub API commit response.
- * @returns {string} Formatted diff string.
+ * @param commitData - GitHub API commit response.
+ * @returns Formatted diff string.
  */
-function formatDiff(commitData) {
+function formatDiff(commitData: GitHubCommitData): string {
   if (!commitData.files || commitData.files.length === 0) {
     return 'No file changes detected.';
   }
@@ -211,11 +281,11 @@ function formatDiff(commitData) {
 /**
  * Formats the complete email message with all commit diffs.
  * 
- * @param {string} repositoryName - Repository name.
- * @param {Array} commitDiffs - Array of commit diff objects.
- * @returns {string} Formatted email message.
+ * @param repositoryName - Repository name.
+ * @param commitDiffs - Array of commit diff objects.
+ * @returns Formatted email message.
  */
-function formatEmailMessage(repositoryName, commitDiffs) {
+function formatEmailMessage(repositoryName: string, commitDiffs: CommitDiff[]): string {
   let message = `New commits pushed to ${repositoryName}\n`;
   message += `Environment: ${ENVIRONMENT}\n`;
   message += `${'='.repeat(60)}\n\n`;
@@ -238,4 +308,3 @@ function formatEmailMessage(repositoryName, commitDiffs) {
     
   return message;
 }
-

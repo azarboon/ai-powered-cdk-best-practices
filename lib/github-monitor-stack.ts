@@ -29,6 +29,7 @@ import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
@@ -92,10 +93,10 @@ export class GitHubMonitorStack extends cdk.Stack {
      * Timeout: 30s (sufficient for GitHub API calls with buffer for retries)
      * Security: No internet access restrictions needed for GitHub API calls.
      */
-    const gitDiffProcessorFunction = new lambda.Function(this, 'GitDiffProcessorFunction', {
+    const gitDiffProcessorFunction = new nodejs.NodejsFunction(this, 'GitDiffProcessorFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset('lambda'),
+      entry: 'lambda/index.ts',
+      handler: 'handler',
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
       environment: {
@@ -340,10 +341,10 @@ export class GitHubMonitorStack extends cdk.Stack {
      * Timeout: 30s (sufficient for EventBridge API calls)
      * Security: Only EventBridge put-events permission.
      */
-    const webhookReceiverFunction = new lambda.Function(this, 'WebhookReceiverFunction', {
+    const webhookReceiverFunction = new nodejs.NodejsFunction(this, 'WebhookReceiverFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'webhook-receiver.handler',
-      code: lambda.Code.fromAsset('lambda'),
+      entry: 'lambda/webhook-receiver.ts',
+      handler: 'handler',
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
       environment: {

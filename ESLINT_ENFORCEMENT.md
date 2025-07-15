@@ -1,8 +1,8 @@
 # ESLint Enforcement Policy - Current Implementation
 
-**Last Updated**: 2025-01-13  
+**Last Updated**: 2025-01-15  
 **Status**: ACTIVE - Commit-Time Enforcement Only  
-**Version**: 2.0 (Updated for commit-time only enforcement)
+**Version**: 4.0 (Updated for simplified configuration with caching)
 
 ## 🎯 **Current Enforcement Strategy**
 
@@ -10,10 +10,12 @@
 ESLint validation is **ONLY** enforced before commits, **NOT** before deployments.
 
 - **When**: Before every `git commit`
-- **Scope**: All JavaScript and TypeScript files in `bin/`, `lib/`, `lambda/`
+- **Method**: Direct `npm run lint` execution (no lint-staged)
+- **Scope**: ALL JavaScript and TypeScript files in the entire project
 - **Tolerance**: Zero warnings, zero errors
 - **Blocking**: Commits are blocked if ESLint fails
-- **Auto-fix**: Attempted automatically during pre-commit
+- **Caching**: Enabled for faster subsequent runs (~20 seconds)
+- **Timeout**: 60 seconds maximum
 
 ### **🚀 DEPLOYMENT-TIME (NO ENFORCEMENT)**
 Deployments focus on build and template validation for faster cycles.
@@ -25,9 +27,19 @@ Deployments focus on build and template validation for faster cycles.
 
 ## 📋 **Current ESLint Configuration**
 
-### **JavaScript Files** (`lambda/*.js`)
-- **Parser**: Default ESLint parser
-- **Environment**: Node.js, ES2021
+### **Simplified Configuration**
+- **Method**: Direct ESLint execution on entire project
+- **Configuration**: Single `.eslintrc.json` with basic rules only
+- **Caching**: Enabled for optimal performance
+- **Type-aware rules**: Removed for performance (no `project` config)
+
+### **JavaScript Files** (`lambda/*.js` - now TypeScript)**
+- **All Lambda functions**: Converted to TypeScript for consistency
+
+### **TypeScript Files** (`bin/*.ts`, `lib/*.ts`, `lambda/*.ts`)**
+- **Parser**: `@typescript-eslint/parser` (syntax-only, no type checking)
+- **Rules**: Basic formatting + unused variable detection
+- **Performance**: ~20 seconds for full project validation
 - **Base Rules**: `eslint:recommended`
 - **Plugins**: `jsdoc` for documentation enforcement
 - **Key Rules**:
@@ -147,10 +159,10 @@ git commit -m "message" --no-verify
 ## 🔧 **Configuration Files**
 
 - **Main Config**: `.eslintrc.json`
-- **TypeScript Config**: `tsconfig.json` (referenced by ESLint)
-- **Package Scripts**: `package.json` (lint commands)
-- **Pre-commit Hook**: `.husky/pre-commit`
-- **Lint-staged Config**: `package.json` (lint-staged section)
+- **TypeScript Config**: `tsconfig.json` (for TypeScript compilation only)
+- **Package Scripts**: `package.json` (lint commands with caching)
+- **Pre-commit Hook**: `.husky/pre-commit` (direct ESLint execution)
+- **Ignore Patterns**: `.eslintignore` (excludes compiled files)
 
 ## 📝 **Recent Changes**
 

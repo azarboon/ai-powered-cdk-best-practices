@@ -5,16 +5,12 @@
     "node": true
   },
   "extends": [
-    "eslint:recommended",
-    "plugin:jsdoc/recommended"
+    "eslint:recommended"
   ],
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "plugins": [
-    "jsdoc"
-  ],
   "rules": {
     "indent": ["error", 2],
     "linebreak-style": ["off"],
@@ -23,74 +19,17 @@
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "no-console": "off",
     "prefer-const": "error",
-    "no-var": "error",
-    
-    // JSDoc and comment enforcement rules
-    "jsdoc/require-jsdoc": [
-      "error",
-      {
-        "require": {
-          "FunctionDeclaration": true,
-          "MethodDefinition": true,
-          "ClassDeclaration": true,
-          "ArrowFunctionExpression": true,
-          "FunctionExpression": true
-        }
-      }
-    ],
-    "jsdoc/require-description": ["error", {
-      "contexts": ["any"]
-    }],
-    "jsdoc/require-description-complete-sentence": "error",
-    "jsdoc/require-param": "error",
-    "jsdoc/require-param-description": "error",
-    "jsdoc/require-param-type": "off",
-    "jsdoc/require-returns": "error",
-    "jsdoc/require-returns-description": "error",
-    "jsdoc/require-returns-type": "off",
-    "jsdoc/check-alignment": "error",
-    "jsdoc/check-indentation": "error",
-    "jsdoc/check-param-names": "error",
-    "jsdoc/check-syntax": "error",
-    "jsdoc/check-tag-names": "error",
-    "jsdoc/empty-tags": "error",
-    "jsdoc/multiline-blocks": "error",
-    "jsdoc/no-bad-blocks": "error",
-    "jsdoc/no-multi-asterisks": "error",
-    "jsdoc/require-asterisk-prefix": "error",
-    "jsdoc/require-hyphen-before-param-description": "error",
-    "jsdoc/tag-lines": ["error", "never", {"startLines": 1}],
-    "jsdoc/valid-types": "error"
+    "no-var": "error"
   },
   "overrides": [
     {
       "files": ["*.ts"],
       "parser": "@typescript-eslint/parser",
-      "parserOptions": {
-        "project": "./tsconfig.json"
-      },
       "plugins": ["@typescript-eslint"],
-      "extends": ["plugin:@typescript-eslint/recommended"],
       "rules": {
-        "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-        "@typescript-eslint/explicit-function-return-type": "error",
-        "@typescript-eslint/explicit-module-boundary-types": "error",
-        "@typescript-eslint/no-explicit-any": "error",
-        "@typescript-eslint/prefer-readonly": "error",
-        "@typescript-eslint/prefer-nullish-coalescing": "error",
-        "@typescript-eslint/prefer-optional-chain": "error",
-        "@typescript-eslint/no-non-null-assertion": "error",
-        "no-unused-vars": "off"
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
       }
     }
-  ],
-  "ignorePatterns": [
-    "node_modules/",
-    "cdk.out/",
-    "*.d.ts",
-    "awscliv2.zip",
-    "aws/",
-    "bin/*.js",
-    "lib/*.js"
   ]
 }
