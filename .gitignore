@@ -23,10 +23,10 @@ config
 # =============================================================================
 # BUILD ARTIFACTS - Generated files (ALL compiled TypeScript)
 # =============================================================================
-# All compiled JavaScript and TypeScript declaration files
-*.js
-*.d.ts
-*.js.map
+# All compiled JavaScript and TypeScript declaration files in ALL directories
+**/*.js
+**/*.d.ts
+**/*.js.map
 
 # CDK build outputs
 cdk.out/

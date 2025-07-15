@@ -7,4 +7,10 @@ aws/
 # Compiled TypeScript files
 bin/*.js
 lib/*.js
+**/*.js
+*.js
+**/*.d.ts
 *.d.ts
+
+# eslint
+.eslintcache
