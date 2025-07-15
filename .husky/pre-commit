@@ -4,8 +4,10 @@
 # Change to project directory
 cd "$(dirname "$0")/.."
 
-echo "🔍 Running ESLint validation with debug output..."
-
+echo "$ npm run lint:fix"
 npm run lint:fix
 
-echo "✅ ESLint validation completed successfully"
+echo "$ npm run validate"
+npm run validate
+
+echo "✅ Pre-commit validations completed successfully"

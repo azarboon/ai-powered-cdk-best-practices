@@ -5,7 +5,7 @@
 
 <!-- NOTE to self: start WSL terminal, update aws account id and email in .env.template, then aws configure, then run q command line -->
 
-# AWS CDK GitHub Monitor with AI-Assisted Best Practices in Mind
+# Boilerplate for AWS CDK TypeScript Best Practices and Effective Amazon Q Development
 
 This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated code quality checks, automated security checks, automated documentation updates.
 
@@ -77,46 +77,26 @@ alias cdk-version='cdk --version'
 
 ## ESLint Code Quality checks
 
-ALL JavaScript and TypeScript files MUST pass ESLint validation before every commit, with zero warning tolerance. This strict check does not run during deployment—I chose this for faster troubleshooting and development. See `.eslintrc.json` for details.
+ALL TypeScript files MUST pass ESLint validation before every commit, with zero warning tolerance. This strict check does not run during deployment—I chose this for faster troubleshooting and development. See `.eslintrc.json` for details.
 
-ESLint ensures code and comment quality on all JS and TS files in the project using a simplified, fast configuration with caching enabled for optimal performance. You can find all relevant details in the ESLINT\_\*.md files located in the project root.
+ESLint ensures code and comment quality on all TS files in the project using a simplified, fast configuration with caching enabled for optimal performance. 
 
 The pre-commit hook uses Husky. Below you can find more about its configuration and pre-commit flow.
 
-### Eslint requirements
 
-- **Code Formatting**: Consistent indentation, quotes, and semicolons
-- **Best Practices**: Modern JavaScript/TypeScript patterns (prefer-const, no-var)
-- **Syntax Validation**: TypeScript syntax checking without type-aware rules
-- **Unused Variables**: Detection with underscore prefix ignore pattern
-- **Performance Optimized**: Caching enabled for fast subsequent runs (~20 seconds)
+### **🔧 Husky Pre-Commit Configuration**
 
-## Setup
+**Setup**: Husky v8.0.3 auto-configures via `"prepare": "husky install"` in package.json during `npm install`. Sets Git's `core.hooksPath` to `.husky/` directory.
 
-For development, I use VS Code installed on Microsoft Windows 10. I mainly use the integrated **WSL terminal in VS Code**.
+**Pre-commit Flow**:
 
-## 🐧 Terminal
+1. `git commit` → `.husky/pre-commit` script
+2. Runs `npm run lint:fix` directly on all project files 
+3. ESLint validates all TS files with caching (`--max-warnings 0 --cache`)
+5. Blocks commit if linting fails 
 
-Here are my settings to replicate my environment.
+File-based hooks in `.husky/` instead of package.json config. Direct ESLint execution with comprehensive project-wide validation and caching for optimal performance.
 
-**WSL Info**:
-
-- Distro: Ubuntu on WSL 2
-- Default shell: Bash (`/bin/bash`)
-
-**.bashrc Key Settings**:
-
-```bash
-export NPM_CONFIG_PREFIX="$HOME/.npm-global"
-export PATH="$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
-export PATH=$(echo $PATH | tr ':' '\n' | grep -v "/mnt/c/Users/YOUR_USERNAME/AppData/Roaming/npm" | tr '\n' ':' | sed 's/:$//')
-export GIT_ASKPASS="/mnt/c/Windows/System32/cmd.exe"
-export GIT_CREDENTIAL_HELPER="wincred"
-
-alias ll='ls -alF'
-alias aws-version='aws --version'
-alias cdk-version='cdk --version'
-```
 
 <!-- ========================================= -->
 <!-- END PROTECTED SECTION                    -->
@@ -137,22 +117,6 @@ npm run lint:fix
 npm run validate
 ```
 
-### **🔧 Husky Pre-Commit Configuration**
-
-**Setup**: Husky v8.0.3 auto-configures via `"prepare": "husky install"` in package.json during `npm install`. Sets Git's `core.hooksPath` to `.husky/` directory.
-
-**Pre-commit Flow**:
-
-1. `git commit` → `.husky/pre-commit` script
-2. Runs `npm run lint:fix` directly on all project files 
-3. ESLint validates all JS/TS files with caching (`--max-warnings 0 --cache`)
-5. Blocks commit if linting fails 
-
-**Modern Approach**: File-based hooks in `.husky/` instead of package.json config. Direct ESLint execution with comprehensive project-wide validation and caching for optimal performance.### **❌ What Happens if ESLint Fails**
-
-- **Commits are BLOCKED** - cannot commit with linting errors
-- **Deployments proceed** - ESLint not enforced during deployment
-- **Pre-commit hooks fail** - must fix issues before committing
 
 ### **🚀 Developer Workflow**
 
@@ -163,35 +127,7 @@ npm run validate
 5. **Commit** - pre-commit hook validates automatically
 6. **Deploy** - deployment script validates build only
 
-### **⚠️ Troubleshooting ESLint Issues**
 
-```bash
-# If commit is blocked by ESLint:
-npm run lint:fix    # Auto-fix what's possible (with caching)
-npm run lint        # See remaining issues (with caching)
-# Fix remaining issues manually, then commit again
-
-# If you need to check code quality before deployment:
-npm run lint:fix    # Auto-fix what's possible (with caching)
-npm run lint        # Verify all issues resolved (with caching)
-./deploy.sh         # Deploy (no ESLint validation during deployment)
-```
-
----
-
----
-
-**Troubleshooting:**
-
-```bash
-# Test the pre-commit hook
-./.husky/pre-commit
-
-# Verify npm is available
-which npm && npm --version
-
-# If issues persist, reinstall Node.js using guide above
-```
 
 ### **⚡ Quick Setup (Recommended)**
 
@@ -206,6 +142,7 @@ cd q-sample
 ./setup.sh
 ```
 
+@QCLI: make sure the script verify nodeinstallation, too. Also update README to include this.
 The setup script will:
 
 - ✅ **Detect your environment** automatically
@@ -229,38 +166,23 @@ npm run prepare      # Setup pre-commit hooks
 
 ### Prerequisites
 
-- **Node.js 18+** and npm
-- **AWS CLI** configured with your credentials
-- **AWS CDK CLI** installed (`npm install -g aws-cdk`)
+- **Node.js 22+** and npm
+- **Docker v27.5** (for CDK Lambda bundling)
+- **AWS CLI v2.27** configured with your credentials
+- **AWS CDK CLI v2.1** installed (`npm install -g aws-cdk`)
 - **GitHub Repository Access** for webhook configuration
 
 ### Environment Setup
 
-1. **Configure environment variables in .env:**
+Setup AWS configure
+
+Configure environment variables in .env:
 
    ```bash
    # Edit the .env file with your actual values
    nano .env  # or use your preferred editor
    ```
 
-2. **Update .env file with your values:**
-
-   ```bash
-   # Required Configuration
-   CDK_DEFAULT_ACCOUNT=your-aws-account-id
-   CDK_DEFAULT_REGION=us-east-1
-   GITHUB_REPOSITORY=owner/repo
-   NOTIFICATION_EMAIL=your-email@example.com
-
-   # Optional Configuration
-   ENVIRONMENT=dev
-   GITHUB_API_BASE=https://api.github.com
-   ```
-
-3. **Load environment variables:**
-   ```bash
-   source .env
-   ```
 
 ### Automated Deployment
 
@@ -270,6 +192,7 @@ npm run prepare      # Setup pre-commit hooks
    npm install
    ```
 
+@mahdi: check if deploy.sh is needed. if not, remove it
 2. **Deploy using automated script (Recommended):**
 
    ```bash
@@ -299,6 +222,52 @@ cdk bootstrap
 npm run deploy
 ```
 
+
+After deployment, the script will display:
+
+```
+🎯 GitHub Webhook URL:
+   https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod/webhook
+
+📝 Next Steps:
+   1. Go to: https://github.com/your-username/your-repo/settings/hooks
+   2. Add webhook with URL: https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod/webhook
+   3. Set Content type: application/json
+   4. Select 'Just the push event'
+   5. Ensure webhook is Active
+```
+
+Confirm Email Subscription
+
+Check your email for SNS subscription confirmation and click the confirmation link.
+
+
+
+Add Webhook
+Go to: `https://github.com/[your-repo]/settings/hooks`
+
+- **Payload URL**: Use the `WebhookUrl` from deployment output
+- **Content type**: `application/json`
+- **Secret**: Leave empty (optional for additional security)
+- **Events**: Select "Just the push event"
+- **Active**: ✅ Enabled
+
+Update GitHub webhook URL if API Gateway endpoint changes 
+
+Test the Webhook
+
+
+Make a commit to the repository and verify webhook delivery in GitHub settings.
+
+
+## 🧹 Cleanup
+
+To remove all resources and avoid ongoing costs:
+
+```bash
+cdk destroy
+```
+
 ### Development Workflow
 
 - **Before changes:** `npm run validate` (runs build + synth, no linting)
@@ -306,25 +275,8 @@ npm run deploy
 - **Build only:** `npm run build`
 - **Deploy with validation:** `npm run deploy` (build + deploy, no linting)
 
-## 📋 Configuration
 
 All configuration is managed through environment variables (no hardcoded values):
-
-| Variable              | Description              | Default                  | Required |
-| --------------------- | ------------------------ | ------------------------ | -------- |
-| `CDK_DEFAULT_ACCOUNT` | AWS Account ID           | -                        | ✅       |
-| `CDK_DEFAULT_REGION`  | AWS Region               | `us-east-1`              | ✅       |
-| `GITHUB_REPOSITORY`   | Target repo (owner/repo) | `azarboon/dummy`         | ✅       |
-| `NOTIFICATION_EMAIL`  | Email for notifications  | -                        | ✅       |
-| `GITHUB_API_BASE`     | GitHub API base URL      | `https://api.github.com` | ❌       |
-| `ENVIRONMENT`         | Environment tag          | `dev`                    | ❌       |
-
-### Alternative AWS Environment Variables
-
-You can also use these instead of `CDK_DEFAULT_*`:
-
-- `AWS_ACCOUNT_ID` (instead of `CDK_DEFAULT_ACCOUNT`)
-- `AWS_REGION` (instead of `CDK_DEFAULT_REGION`)
 
 ## 📊 Architecture Diagram
 
@@ -365,8 +317,8 @@ You can also use these instead of `CDK_DEFAULT_*`:
 
 ## 🔒 Security Features
 
+@mahdi: check if these are actually implemented
 - **Least Privilege IAM**: All roles have minimal required permissions
-- **Repository Filtering**: Only processes events from configured repository
 - **Event Type Filtering**: Only processes push events (ignores ping, issues, etc.)
 - **No Hardcoded Credentials**: Uses IAM roles and environment variables
 - **Environment Variable Configuration**: All sensitive values externalized
@@ -376,109 +328,11 @@ You can also use these instead of `CDK_DEFAULT_*`:
 
 ## 💰 Cost Optimization
 
-- **Minimal Configuration**: 256MB memory, 30s timeouts
 - **Log Retention**: 1-week retention to control storage costs
 - **Early Returns**: Webhook receiver exits early for ignored events
 - **Resource Tagging**: All resources tagged for cost tracking
 
-## 🚀 Deployment Guide
-
-### Step 1: Environment Setup
-
-```bash
-# Clone or navigate to project directory
-cd /path/to/your/project
-
-# Edit .env file with your values
-nano .env  # or use your preferred editor
-```
-
-### Step 2: Configure Environment Variables
-
-Edit `.env` file with your actual values:
-
-```bash
-CDK_DEFAULT_ACCOUNT=123456789012
-CDK_DEFAULT_REGION=us-east-1
-GITHUB_REPOSITORY=your-username/your-repo
-NOTIFICATION_EMAIL=your-email@example.com
-ENVIRONMENT=dev
-```
-
-### Step 3: Deploy
-
-```bash
-# Load environment variables
-source .env
-
-# Install dependencies (first time only)
-npm install
-
-# Deploy using automated script
-./deploy.sh
-```
-
-### Step 4: Configure GitHub Webhook
-
-After deployment, the script will display:
-
-```
-🎯 GitHub Webhook URL:
-   https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod/webhook
-
-📝 Next Steps:
-   1. Go to: https://github.com/your-username/your-repo/settings/hooks
-   2. Add webhook with URL: https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod/webhook
-   3. Set Content type: application/json
-   4. Select 'Just the push event'
-   5. Ensure webhook is Active
-```
-
-### Step 5: Confirm Email Subscription
-
-Check your email for SNS subscription confirmation and click the confirmation link.
-
-## 🔗 GitHub Webhook Configuration
-
-### 1. Navigate to Repository Settings
-
-Go to: `https://github.com/[your-repo]/settings/hooks`
-
-### 2. Add Webhook
-
-- **Payload URL**: Use the `WebhookUrl` from deployment output
-- **Content type**: `application/json`
-- **Secret**: Leave empty (optional for additional security)
-- **Events**: Select "Just the push event"
-- **Active**: ✅ Enabled
-
-### 3. Test the Webhook
-
-Make a commit to the repository and verify webhook delivery in GitHub settings.
-
-## 📊 Monitoring
-
-### What You'll See in Logs
-
-- ✅ **Webhook Processing**: Repository info, commit count, event filtering
-- ✅ **Git Diff Processing**: Commit details, file changes, API responses
-- ✅ **Environment Context**: All logs include environment tags for debugging
-- ❌ **NOT Logged**: Full commit content, credentials, or sensitive data
-
-## 🧪 Testing
-
-### Test Webhook Endpoint
-
-```bash
-curl -X POST https://your-webhook-url/webhook \
-  -H "Content-Type: application/json" \
-  -H "X-GitHub-Event: push" \
-  -d '{
-    "repository": {"full_name": "your-username/your-repo"},
-    "commits": [{"id": "test-commit-id", "message": "Test commit"}]
-  }'
-```
-
+@mahdi: verify this
 ## 🗂️ Project Structure
 
 ```
@@ -498,47 +352,3 @@ curl -X POST https://your-webhook-url/webhook \
 ├── tsconfig.json               # TypeScript configuration
 └── README.md                   # This file
 ```
-
-## 🔧 Development Guidelines
-
-### Code Quality
-
-- **ESLint Validation**: All code must pass linting before commits (not deployments)
-- **Environment Variables**: No hardcoded values allowed <!-- verify this -->
-- **Comprehensive Comments**: Every component and function documented
-- **Security First**: Least privilege access, no credential exposure
-
-### Available NPM Scripts
-
-```bash
-npm run build          # Build TypeScript code
-npm run lint           # Run ESLint validation (with caching)
-npm run lint:fix       # Auto-fix ESLint issues (with caching)
-npm run validate       # Run build + CDK synth (no linting)
-npm run deploy         # Deploy with build validation (no linting)
-```
-
-### Deployment Process
-
-1. Always run `npm run validate` before deployment (build + synth validation)
-2. Use `./deploy.sh` for automated deployment with build validation
-3. Monitor CloudWatch logs for successful operation
-4. Update GitHub webhook URL if API Gateway endpoint changes
-
-## 🧹 Cleanup
-
-To remove all resources and avoid ongoing costs:
-
-```bash
-cdk destroy
-```
-
-This will delete:
-
-- All Lambda functions
-- API Gateway
-- Step Functions
-- EventBridge rules
-- SNS topic and subscriptions
-- CloudWatch log groups
-- IAM roles and policies

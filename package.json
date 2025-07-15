@@ -2,10 +2,12 @@
   "name": "github-monitor-cdk",
   "version": "1.0.0",
   "description": "CDK app to monitor GitHub repository commits and send git diff notifications via SNS",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
-    "build": "tsc",
-    "cdk": "cdk",
-    "deploy": "npm run validate && cdk deploy",
+    "build": "tsc", 
+    "deploy": "cdk deploy",
     "destroy": "cdk destroy",
     "lint": "eslint . --ext .js,.ts --max-warnings 0 --cache",
     "lint:fix": "eslint . --ext .js,.ts --fix --cache",
@@ -13,7 +15,7 @@
     "prepare": "husky install"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "aws-cdk": "2.156.0",
