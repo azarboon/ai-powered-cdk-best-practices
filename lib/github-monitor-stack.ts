@@ -1,14 +1,14 @@
 /**
  * GitHub Repository Monitor Stack.
- * 
+ *
  * Purpose: Monitors any configured GitHub repository for new commits
  * and automatically sends git difference notifications via email using SNS.
- * 
+ *
  * Configuration: All settings managed via environment variables
  * - Repository: Configurable via GITHUB_REPOSITORY env var
  * - Email: Configurable via NOTIFICATION_EMAIL env var
  * - Environment: Configurable via ENVIRONMENT env var (default: dev).
- * 
+ *
  * Architecture:
  * 1. API Gateway receives GitHub webhooks
  * 2. Webhook receiver Lambda transforms events to EventBridge
@@ -17,7 +17,7 @@
  * 5. Git diff processor fetches commit differences from GitHub API
  * 6. Step Functions publishes git diff to SNS topic
  * 7. SNS sends email notification with git differences.
- * 
+ *
  * Security: All components follow least privilege access principles
  * Cost: Minimal configuration with pay-per-use services and log retention
  * Resource Tagging: All resources tagged for cost tracking and ownership.
@@ -44,7 +44,7 @@ import { Construct } from 'constructs';
 export class GitHubMonitorStack extends cdk.Stack {
   /**
    * Creates a new GitHubMonitorStack instance.
-   * 
+   *
    * @param scope - The scope in which to define this construct.
    * @param id - The scoped construct ID.
    * @param props - Stack properties for configuration.
@@ -59,11 +59,11 @@ export class GitHubMonitorStack extends cdk.Stack {
     /**
      * Configuration from Environment Variables
      * Following AWS CDK best practices for configuration management.
-     * 
+     *
      * Required Environment Variables:
      * - GITHUB_REPOSITORY: Target GitHub repository (format: owner/repo)
      * - NOTIFICATION_EMAIL: Email address for SNS notifications.
-     * 
+     *
      * Optional Environment Variables:
      * - GITHUB_API_BASE: GitHub API base URL (defaults to api.github.com)
      * - ENVIRONMENT: Environment tag (defaults to 'dev').
@@ -104,9 +104,9 @@ export class GitHubMonitorStack extends cdk.Stack {
         GITHUB_API_BASE: `${githubApiBase}/repos/${githubRepository}`,
         GITHUB_REPOSITORY: githubRepository,
         SNS_TOPIC_ARN: '', // Will be set after SNS topic creation
-        ENVIRONMENT: environment
+        ENVIRONMENT: environment,
       },
-      description: 'Fetches git differences from GitHub repository commits'
+      description: 'Fetches git differences from GitHub repository commits',
     });
 
     // Add resource tagging for cost tracking and ownership
@@ -123,7 +123,7 @@ export class GitHubMonitorStack extends cdk.Stack {
     new logs.LogGroup(this, 'GitDiffProcessorLogGroup', {
       logGroupName: `/aws/lambda/${gitDiffProcessorFunction.functionName}`,
       retention: logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.DESTROY
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // =============================================================================
@@ -138,7 +138,7 @@ export class GitHubMonitorStack extends cdk.Stack {
      */
     const gitDiffTopic = new sns.Topic(this, 'GitDiffTopic', {
       topicName: 'github-git-diff-notifications',
-      displayName: 'GitHub Git Diff Notifications'
+      displayName: 'GitHub Git Diff Notifications',
     });
 
     // Add resource tagging for cost tracking and ownership
@@ -178,9 +178,9 @@ export class GitHubMonitorStack extends cdk.Stack {
               effect: iam.Effect.ALLOW,
               actions: ['lambda:InvokeFunction'],
               // Security: Specific resource ARN, not wildcard
-              resources: [gitDiffProcessorFunction.functionArn]
-            })
-          ]
+              resources: [gitDiffProcessorFunction.functionArn],
+            }),
+          ],
         }),
         // Minimal policy: only publish to specific SNS topic
         SNSPublishPolicy: new iam.PolicyDocument({
@@ -189,9 +189,9 @@ export class GitHubMonitorStack extends cdk.Stack {
               effect: iam.Effect.ALLOW,
               actions: ['sns:Publish'],
               // Security: Specific SNS topic ARN, not wildcard
-              resources: [gitDiffTopic.topicArn]
-            })
-          ]
+              resources: [gitDiffTopic.topicArn],
+            }),
+          ],
         }),
         // Required for Step Functions CloudWatch logging
         LoggingPolicy: new iam.PolicyDocument({
@@ -206,14 +206,14 @@ export class GitHubMonitorStack extends cdk.Stack {
                 'logs:ListLogDeliveries',
                 'logs:PutResourcePolicy',
                 'logs:DescribeResourcePolicies',
-                'logs:DescribeLogGroups'
+                'logs:DescribeLogGroups',
               ],
               // Note: These actions require wildcard resource for Step Functions logging
-              resources: ['*']
-            })
-          ]
-        })
-      }
+              resources: ['*'],
+            }),
+          ],
+        }),
+      },
     });
 
     /**
@@ -224,7 +224,7 @@ export class GitHubMonitorStack extends cdk.Stack {
     const stepFunctionLogGroup = new logs.LogGroup(this, 'StepFunctionLogGroup', {
       logGroupName: '/aws/stepfunctions/GitHubDiffStateMachine',
       retention: logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.DESTROY
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     /**
@@ -238,7 +238,7 @@ export class GitHubMonitorStack extends cdk.Stack {
       comment: 'Invoke Lambda to process git differences from GitHub',
       retryOnServiceExceptions: true,
       // Security: Don't include client context or payload in logs
-      outputPath: '$.Payload'
+      outputPath: '$.Payload',
     });
 
     /**
@@ -251,7 +251,7 @@ export class GitHubMonitorStack extends cdk.Stack {
       topic: gitDiffTopic,
       subject: stepfunctions.JsonPath.stringAt('$.subject'),
       message: stepfunctions.TaskInput.fromJsonPathAt('$.message'),
-      comment: 'Send git diff notification via SNS email'
+      comment: 'Send git diff notification via SNS email',
     });
 
     /**
@@ -269,8 +269,8 @@ export class GitHubMonitorStack extends cdk.Stack {
       logs: {
         destination: stepFunctionLogGroup,
         level: stepfunctions.LogLevel.ERROR,
-        includeExecutionData: false
-      }
+        includeExecutionData: false,
+      },
     });
 
     // =============================================================================
@@ -291,10 +291,10 @@ export class GitHubMonitorStack extends cdk.Stack {
         detailType: ['GitHub Push'],
         detail: {
           repository: {
-            full_name: [githubRepository]
-          }
-        }
-      }
+            full_name: [githubRepository],
+          },
+        },
+      },
     });
 
     // Add resource tagging for cost tracking and ownership
@@ -308,26 +308,28 @@ export class GitHubMonitorStack extends cdk.Stack {
      * Security: Dedicated IAM role with minimal permissions
      * Input: Passes entire event payload to Step Functions.
      */
-    githubCommitRule.addTarget(new targets.SfnStateMachine(stateMachine, {
-      input: events.RuleTargetInput.fromEventPath('$'),
-      // Security: Use a dedicated role for EventBridge to Step Functions
-      role: new iam.Role(this, 'EventBridgeRole', {
-        assumedBy: new iam.ServicePrincipal('events.amazonaws.com'),
-        inlinePolicies: {
-          // Minimal policy: only start execution on specific State Machine
-          StepFunctionExecutePolicy: new iam.PolicyDocument({
-            statements: [
-              new iam.PolicyStatement({
-                effect: iam.Effect.ALLOW,
-                actions: ['states:StartExecution'],
-                // Security: Specific State Machine ARN, not wildcard
-                resources: [stateMachine.stateMachineArn]
-              })
-            ]
-          })
-        }
+    githubCommitRule.addTarget(
+      new targets.SfnStateMachine(stateMachine, {
+        input: events.RuleTargetInput.fromEventPath('$'),
+        // Security: Use a dedicated role for EventBridge to Step Functions
+        role: new iam.Role(this, 'EventBridgeRole', {
+          assumedBy: new iam.ServicePrincipal('events.amazonaws.com'),
+          inlinePolicies: {
+            // Minimal policy: only start execution on specific State Machine
+            StepFunctionExecutePolicy: new iam.PolicyDocument({
+              statements: [
+                new iam.PolicyStatement({
+                  effect: iam.Effect.ALLOW,
+                  actions: ['states:StartExecution'],
+                  // Security: Specific State Machine ARN, not wildcard
+                  resources: [stateMachine.stateMachineArn],
+                }),
+              ],
+            }),
+          },
+        }),
       })
-    }));
+    );
 
     // =============================================================================
     // WEBHOOK INFRASTRUCTURE - GitHub integration
@@ -350,9 +352,9 @@ export class GitHubMonitorStack extends cdk.Stack {
       environment: {
         // Configuration from environment variables - no hardcoded values
         GITHUB_REPOSITORY: githubRepository,
-        ENVIRONMENT: environment
+        ENVIRONMENT: environment,
       },
-      description: 'Receives GitHub webhooks and forwards to EventBridge'
+      description: 'Receives GitHub webhooks and forwards to EventBridge',
     });
 
     // Add resource tagging for cost tracking and ownership
@@ -365,12 +367,14 @@ export class GitHubMonitorStack extends cdk.Stack {
      * Purpose: Allows webhook receiver to publish events to EventBridge
      * Security: Minimal permission - only PutEvents action.
      */
-    webhookReceiverFunction.addToRolePolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: ['events:PutEvents'],
-      // Note: EventBridge PutEvents requires wildcard resource
-      resources: ['*']
-    }));
+    webhookReceiverFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['events:PutEvents'],
+        // Note: EventBridge PutEvents requires wildcard resource
+        resources: ['*'],
+      })
+    );
 
     /**
      * CloudWatch Log Group for Webhook Receiver
@@ -380,7 +384,7 @@ export class GitHubMonitorStack extends cdk.Stack {
     new logs.LogGroup(this, 'WebhookReceiverLogGroup', {
       logGroupName: `/aws/lambda/${webhookReceiverFunction.functionName}`,
       retention: logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.DESTROY
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     /**
@@ -419,7 +423,7 @@ export class GitHubMonitorStack extends cdk.Stack {
      */
     new cdk.CfnOutput(this, 'StateMachineArn', {
       value: stateMachine.stateMachineArn,
-      description: 'Step Function State Machine ARN'
+      description: 'Step Function State Machine ARN',
     });
 
     /**
@@ -428,7 +432,7 @@ export class GitHubMonitorStack extends cdk.Stack {
      */
     new cdk.CfnOutput(this, 'EventRuleArn', {
       value: githubCommitRule.ruleArn,
-      description: 'EventBridge Rule ARN'
+      description: 'EventBridge Rule ARN',
     });
 
     /**
@@ -437,7 +441,7 @@ export class GitHubMonitorStack extends cdk.Stack {
      */
     new cdk.CfnOutput(this, 'LambdaFunctionArn', {
       value: gitDiffProcessorFunction.functionArn,
-      description: 'Git Diff Processor Lambda Function ARN'
+      description: 'Git Diff Processor Lambda Function ARN',
     });
 
     /**
@@ -446,7 +450,7 @@ export class GitHubMonitorStack extends cdk.Stack {
      */
     new cdk.CfnOutput(this, 'SNSTopicArn', {
       value: gitDiffTopic.topicArn,
-      description: 'SNS Topic ARN for git diff notifications'
+      description: 'SNS Topic ARN for git diff notifications',
     });
 
     // =============================================================================
@@ -455,24 +459,24 @@ export class GitHubMonitorStack extends cdk.Stack {
 
     /**
      * Output the webhook URL for GitHub configuration.
-     * 
+     *
      * This URL needs to be configured in GitHub repository settings as a webhook endpoint.
      */
     new cdk.CfnOutput(this, 'WebhookUrl', {
       value: api.url + 'webhook',
       description: 'GitHub Webhook URL - Configure this in your GitHub repository settings',
-      exportName: 'GitHubWebhookUrl'
+      exportName: 'GitHubWebhookUrl',
     });
 
     /**
      * Output the SNS topic ARN for reference.
-     * 
+     *
      * This can be used for additional integrations or monitoring.
      */
     new cdk.CfnOutput(this, 'NotificationTopicArn', {
       value: gitDiffTopic.topicArn,
       description: 'SNS Topic ARN for git diff notifications',
-      exportName: 'GitDiffNotificationTopicArn'
+      exportName: 'GitDiffNotificationTopicArn',
     });
   }
 }

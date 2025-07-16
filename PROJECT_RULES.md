@@ -7,11 +7,9 @@
 
 **These rules must be changed only by a human. Do not modify them automatically.**
 
-
 # Specific rules for this project. Others may want to tweak them to fit their own project.
 
-AI assistants must NEVER change any of these files automatically unless they have explicit approval from a human. Approval is valid only once, and additional approval must be obtained for any future changes: .eslintrc.json, tsconfig.json, package.json.
-
+AI assistants must NEVER change any of these files automatically unless they have explicit approval from a human. Approval is valid only once, and additional approval must be obtained for any future changes: .eslintrc.json, tsconfig.json, package.json, .husky\pre-commit
 
 # AWS CDK TypeScript Project Rules
 
@@ -90,8 +88,6 @@ They MUST only declare AWS resources and MUST NOT perform deployments, API calls
 ---
 
 **These rules MUST be strictly followed throughout the entire project. Any violation MUST be corrected before code is merged.**
-
-
 
 # Linting
 

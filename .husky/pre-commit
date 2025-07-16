@@ -4,9 +4,7 @@
 # Change to project directory
 cd "$(dirname "$0")/.."
 
-echo "$ npm run lint:fix"
-npm run lint:fix
-
-# @mahdi: you may wanna add npm run validate in here
+echo "$ npm run check"
+npm run check
 
 echo "✅ Pre-commit validations completed successfully"

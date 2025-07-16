@@ -9,7 +9,7 @@
 
 This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated code quality checks, automated security checks, automated documentation updates.
 
-The app is developed using Amazon Q CLI. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in PROJECT_RULES.md. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a simple boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices. 
+The app is developed using Amazon Q CLI. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in PROJECT_RULES.md. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a simple boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices.
 
 Once this project is finalized, I plan to use it as a foundation for other projects—particularly those focused on scrutinizing error handling and troubleshooting across multiple AWS services. As a result, this app intentionally includes various integrations between AWS services that may not represent ideal real-world architecture but serve to demonstrate and test more complex scenarios.
 
@@ -79,10 +79,9 @@ alias cdk-version='cdk --version'
 
 ALL TypeScript files MUST pass ESLint validation before every commit, with zero warning tolerance. This strict check does not run during deployment—I chose this for faster troubleshooting and development. See `.eslintrc.json` for details.
 
-ESLint ensures code and comment quality on all TS files in the project using a simplified, fast configuration with caching enabled for optimal performance. 
+ESLint ensures code and comment quality on all TS files in the project using a simplified, fast configuration with caching enabled for optimal performance.
 
 The pre-commit hook uses Husky. Below you can find more about its configuration and pre-commit flow.
-
 
 ### **🔧 Husky Pre-Commit Configuration**
 
@@ -91,12 +90,11 @@ The pre-commit hook uses Husky. Below you can find more about its configuration 
 **Pre-commit Flow**:
 
 1. `git commit` → `.husky/pre-commit` script
-2. Runs `npm run lint:fix` directly on all project files 
+2. Runs `npm run lint:fix` directly on all project files
 3. ESLint validates all TS files with caching (`--max-warnings 0 --cache`)
-5. Blocks commit if linting fails 
+4. Blocks commit if linting fails
 
 File-based hooks in `.husky/` instead of package.json config. Direct ESLint execution with comprehensive project-wide validation and caching for optimal performance.
-
 
 <!-- ========================================= -->
 <!-- END PROTECTED SECTION                    -->
@@ -117,15 +115,12 @@ npm run lint:fix
 npm run validate
 ```
 
-
 ### **🚀 Developer Workflow**
 
 1. **Write code** following TypeScript best practices
 2. **Run `npm run lint:fix`** to auto-fix issues
 3. **Fix any remaining issues manually**
 4. **Commit** - pre-commit hook validates linting
-
-
 
 ### **⚡ Quick Setup (Recommended)**
 
@@ -137,7 +132,6 @@ git clone <repository-url>
 cd q-sample
 
 ```
-
 
 **Setup**
 
@@ -156,7 +150,7 @@ npm run prepare      # Setup pre-commit hooks
 - **Node.js 22+** and npm
 - **Docker v27.5** (for CDK Lambda bundling)
 - **AWS CLI v2.27** configured with your credentials
-- **AWS CDK CLI v2.1** installed (`npm install -g aws-cdk`)
+- **AWS CDK v2.1** installed (`npm install -g aws-cdk`)
 - **GitHub Repository Access** for webhook configuration
 
 ### Environment Setup
@@ -165,11 +159,10 @@ Setup AWS configure
 
 Configure environment variables in .env:
 
-   ```bash
-   # Edit the .env file with your actual values
-   nano .env  # or use your preferred editor
-   ```
-
+```bash
+# Edit the .env file with your actual values
+nano .env  # or use your preferred editor
+```
 
 ### Automated Deployment
 
@@ -179,20 +172,20 @@ Configure environment variables in .env:
    npm install
    ```
 
-@mahdi: try to deploy manually to check if deploy.sh is needed. if not, remove it
-2. **Deploy using automated script (Recommended):**
+@mahdi: try to deploy manually to check if deploy.sh is needed. if not, remove it 2. **Deploy using automated script (Recommended):**
 
-   ```bash
-   ./deploy.sh
-   ```
+```bash
+./deploy.sh
+```
 
-   This script will:
-   - Validate environment variables
-   - Run ESLint code quality checks
-   - Build TypeScript code
-   - Validate CDK templates
-   - Deploy the stack
-   - Display webhook URL for GitHub configuration
+This script will:
+
+- Validate environment variables
+- Run ESLint code quality checks
+- Build TypeScript code
+- Validate CDK templates
+- Deploy the stack
+- Display webhook URL for GitHub configuration
 
 ### Manual Deployment
 
@@ -208,7 +201,6 @@ cdk bootstrap
 # Deploy the stack
 npm run deploy
 ```
-
 
 After deployment, the script will display:
 
@@ -228,8 +220,6 @@ Confirm Email Subscription
 
 Check your email for SNS subscription confirmation and click the confirmation link.
 
-
-
 Add Webhook
 Go to: `https://github.com/[your-repo]/settings/hooks`
 
@@ -239,13 +229,11 @@ Go to: `https://github.com/[your-repo]/settings/hooks`
 - **Events**: Select "Just the push event"
 - **Active**: ✅ Enabled
 
-Update GitHub webhook URL if API Gateway endpoint changes 
+Update GitHub webhook URL if API Gateway endpoint changes
 
 Test the Webhook
 
-
 Make a commit to the repository and verify webhook delivery in GitHub settings.
-
 
 ## 🧹 Cleanup
 
@@ -261,7 +249,6 @@ cdk destroy
 - **Code quality:** `npm run lint:fix` (enforced at commit time)
 - **Build only:** `npm run build`
 - **Deploy with validation:** `npm run deploy` (build + deploy, no linting)
-
 
 All configuration is managed through environment variables (no hardcoded values):
 
@@ -305,6 +292,7 @@ All configuration is managed through environment variables (no hardcoded values)
 ## 🔒 Security Features
 
 @mahdi: check if these are actually implemented
+
 - **Least Privilege IAM**: All roles have minimal required permissions
 - **Event Type Filtering**: Only processes push events (ignores ping, issues, etc.)
 - **No Hardcoded Credentials**: Uses IAM roles and environment variables
@@ -320,6 +308,7 @@ All configuration is managed through environment variables (no hardcoded values)
 - **Resource Tagging**: All resources tagged for cost tracking
 
 @mahdi: verify this
+
 ## 🗂️ Project Structure
 
 ```
