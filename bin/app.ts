@@ -29,7 +29,6 @@ import { GitHubMonitorStack } from '../lib/github-monitor-stack';
  * Initialize CDK application with compliance validation.
  */
 const app = new cdk.App();
-
 /**
  * Environment Configuration.
  * 

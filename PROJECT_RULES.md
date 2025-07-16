@@ -7,6 +7,12 @@
 
 **These rules must be changed only by a human. Do not modify them automatically.**
 
+
+### Specific rules for this project. Others may want to tweak them to fit their own project.
+
+AI assistants must NEVER change any of these files automatically unless they have explicit approval from a human. Approval is valid only once, and additional approval must be obtained for any future changes: .eslintrc.json, tsconfig.json, package.json.
+
+
 ### Linting
 
 - Before every commit, you must run ESLint to validate and lint all JavaScript and TypeScript files (including code and comments) in all project folders, excluding `node_modules`. This includes, at minimum, the `bin`, `lib`, and `lambda` directories.

@@ -136,21 +136,10 @@ For the fastest setup experience, use the automated setup script:
 git clone <repository-url>
 cd q-sample
 
-# Run automated setup (works on all platforms)
-./setup.sh
 ```
 
-@QCLI: make sure the script verify nodeinstallation, too. Also update README to include this.
-The setup script will:
 
-- ✅ **Detect your environment** automatically
-- ✅ **Verify Node.js and npm** installation
-- ✅ **Install all dependencies**
-- ✅ **Configure pre-commit hooks**
-- ✅ **Test the setup** to ensure everything works
-- ✅ **Provide next steps** for configuration and deployment
-
-**Manual Setup Alternative:**
+**Setup**
 
 ```bash
 npm install          # Install dependencies
