@@ -8,12 +8,92 @@
 **These rules must be changed only by a human. Do not modify them automatically.**
 
 
-### Specific rules for this project. Others may want to tweak them to fit their own project.
+# Specific rules for this project. Others may want to tweak them to fit their own project.
 
 AI assistants must NEVER change any of these files automatically unless they have explicit approval from a human. Approval is valid only once, and additional approval must be obtained for any future changes: .eslintrc.json, tsconfig.json, package.json.
 
 
-### Linting
+# AWS CDK TypeScript Project Rules
+
+These rules are aligned with AWS CDK offciial best practices and MUST be strictly followed throughout the entire project to ensure clean, maintainable, and predictable AWS infrastructure code.
+
+---
+
+## Rule 1: Single Responsibility Constructs and Stacks
+
+**Each Construct or Stack MUST perform exactly one clearly defined function.**  
+They MUST NOT combine unrelated responsibilities within a single class.
+
+---
+
+## Rule 2: Avoid Instantiating Other Stacks Inside Constructors
+
+**Constructs and Stacks MUST NOT create instances of other Stack classes within their constructors.**  
+All cross-stack relationships MUST be wired in the app entry point to maintain clear deployment structure.
+
+---
+
+## Rule 3: Pass Dependencies via Props
+
+**All dependencies MUST be provided through constructor properties.**  
+Constructs and Stacks MUST NOT create their own dependencies internally.
+
+---
+
+## Rule 4: Use Environment Variables, Context, or Deployment Profiles for Account and Region
+
+**Stacks MUST retrieve AWS account and region configuration from environment variables, CDK context, or deployment profiles.**  
+Hardcoding AWS account IDs or regions is strictly forbidden.
+
+---
+
+## Rule 5: Define Composition in app.ts
+
+**All stack instantiation and dependency wiring MUST happen in the app entry point (`app.ts`).**  
+Stacks MUST NOT create or wire other stacks internally.
+
+---
+
+## Rule 6: Prefer Outputs, Imports, or Parameter Store for Cross-Stack References
+
+**Cross-stack communication SHOULD prefer CloudFormation Outputs/Imports or parameter store values to maintain loose coupling.**  
+Direct construct references within the same app ARE acceptable when appropriate but SHOULD be used carefully to avoid tight coupling.
+
+---
+
+## Rule 7: Minimize Direct Resource References Across Stacks
+
+**Stacks SHOULD minimize direct resource references across stacks to reduce deployment coupling.**  
+When needed, AWS CDK’s built-in cross-stack reference handling MAY be used thoughtfully.
+
+---
+
+## Rule 8: Group Related Resources Into Cohesive Constructs
+
+**Related AWS resources MUST be encapsulated into cohesive, well-defined Constructs.**  
+Constructs MUST expose only what is necessary to avoid leaking internal details.
+
+---
+
+## Rule 9: Define Clear Boundaries for Environments
+
+**Stacks MUST define clear boundaries for different deployment environments.**  
+Environment-specific logic MUST be handled via context variables or separate stack definitions.
+
+---
+
+## Rule 10: Keep Construct Constructors Side-Effect Free
+
+**Construct constructors MUST be free of side effects.**  
+They MUST only declare AWS resources and MUST NOT perform deployments, API calls, or mutate external state.
+
+---
+
+**These rules MUST be strictly followed throughout the entire project. Any violation MUST be corrected before code is merged.**
+
+
+
+# Linting
 
 - Before every commit, you must run ESLint to validate and lint all JavaScript and TypeScript files (including code and comments) in all project folders, excluding `node_modules`. This includes, at minimum, the `bin`, `lib`, and `lambda` directories.
 - ESLint must be configured with the `@typescript-eslint/recommended` rule set to ensure consistent, high-quality TypeScript code. All JavaScript and TypeScript files must pass their respective linting rules without errors.
@@ -21,7 +101,7 @@ AI assistants must NEVER change any of these files automatically unless they hav
 - Additionally, ensure that related automation scripts, and all instructions in the `README` clearly enforce and document this requirement. They must describe how linting is checked, when it runs, and what developers need to do to comply.
 - All ESLINT\*.md files must always be kept up to date. Before any commit, you must ensure all these files accurately reflect the current ESLint configuration, enforcement policies, and code practices. If these files are outdated or inconsistent, the commit must fail. After making any changes to the ESLint configuration or related code, you must update these documentation files to reflect the latest changes.
 
-### STRICT GIT COMMAND POLICY
+# STRICT GIT COMMAND POLICY
 
 ## 🚨 CRITICAL RULE: GIT OPERATIONS FORBIDDEN
 
@@ -117,7 +197,7 @@ GIT COMMAND RESTRICTIONS. ABSOLUTE RULE: NO AUTOMATIC COMMITS
 VIOLATION = IMMEDIATE ACKNOWLEDGMENT REQUIRED
 If this rule is violated, AI must immediately acknowledge the violation without excuses.
 
-### SEEK APPROVAL
+# SEEK APPROVAL
 
 ### **🚫 NEVER DO WITHOUT APPROVAL**
 
@@ -145,12 +225,12 @@ If this rule is violated, AI must immediately acknowledge the violation without 
 
 1. Investigate → 2. Present options → 3. Get approval → 4. Implement
 
-### Comments
+# Comments
 
 - All code comments in JavaScript and TypeScript files must comply with the `plugin:jsdoc/recommended` rule set and the project's custom JSDoc rules. This includes providing valid, complete JSDoc comments with clear descriptions, parameter details, and return annotations where applicable.
 - All code blocks and files must include comments explaining their purpose and functionality. After making any changes to code or files, you must update the corresponding comments to reflect the latest changes. Comments must maintain a consistent tone, style, and format throughout the project to ensure clarity and maintainability.
 
-### The rest
+# The rest
 
 - Always use the bare minimum configurations to avoid bloating the code. Always start simple and add complexity only when it's really needed.
 - Strive to follow best practices (only from the official AWS documentation) when configuring services.
