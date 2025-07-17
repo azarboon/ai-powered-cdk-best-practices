@@ -11,7 +11,14 @@
 
 AI assistants must NEVER change any of these files automatically unless they have explicit approval from a human. Approval is valid only once, and additional approval must be obtained for any future changes: .eslintrc.json, tsconfig.json, package.json, .husky\pre-commit
 
-# AWS CDK TypeScript Project Rules
+## **Rule: Suggestions Must Never Trigger Automatic Actions**
+
+**The agent MUST NOT take any action on suggestions automatically.**  
+All suggested changes, fixes, upgrades, deletions, or modifications MUST be presented to the user first for approval.
+
+This rule MUST be followed strictly across the entire project lifecycle
+
+# AWS CDK Project Rules
 
 These rules are aligned with AWS CDK offciial best practices and MUST be strictly followed throughout the entire project to ensure clean, maintainable, and predictable AWS infrastructure code.
 

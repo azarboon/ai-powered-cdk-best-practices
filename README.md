@@ -150,8 +150,7 @@ npm run prepare      # Setup pre-commit hooks
 - **Node.js 22+** and npm
 - **Docker v27.5** (for CDK Lambda bundling)
 - **AWS CLI v2.27** configured with your credentials
-- **AWS CDK v2.1** installed (`npm install -g aws-cdk`)
-- **GitHub Repository Access** for webhook configuration
+- **AWS CDK CLI v2.1021.0**
 
 ### Environment Setup
 

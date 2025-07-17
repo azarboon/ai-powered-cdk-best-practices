@@ -15,14 +15,16 @@
     "lint:fix": "eslint . --ext .ts --fix --cache",
     "format:fix": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run format:check && npm run lint:check && npm run build:check && npm run synth",
+    "security:check": "npm audit --audit-level=low",
+    "security:fix": "npm audit fix --force",
+    "check": "npm run security:check && npm run format:check && npm run lint:check && npm run build:check && npm run synth",
     "prepare": "husky install"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
-    "aws-cdk": "2.156.0",
+    "aws-cdk": "2.1020.2",
     "eslint": "^8.57.1",
     "eslint-plugin-jsdoc": "^48.2.0",
     "eslint-plugin-unused-imports": "^4.1.4",
@@ -32,7 +34,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.0.0",
-    "aws-cdk-lib": "2.156.0",
+    "aws-cdk-lib": "^2.206.0",
     "constructs": "^10.0.0"
   }
 }
