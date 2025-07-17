@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "build:check": "tsc --noEmit",
-    "deploy": "npm run build && cdk deploy",
+    "deploy": "cdk deploy",
     "synth": "cdk synth",
     "destroy": "cdk destroy",
     "lint:check": "eslint . --ext .ts --max-warnings 0 --cache",

@@ -20,79 +20,120 @@ This rule MUST be followed strictly across the entire project lifecycle
 
 # AWS CDK Project Rules
 
-These rules are aligned with AWS CDK offciial best practices and MUST be strictly followed throughout the entire project to ensure clean, maintainable, and predictable AWS infrastructure code.
+These rules are aligned with AWS CDK official best practices and MUST be strictly followed throughout the entire project to ensure clean, maintainable, and predictable AWS infrastructure code.
 
 ---
 
-## Rule 1: Single Responsibility Constructs and Stacks
+## Single Responsibility Constructs and Stacks
 
 **Each Construct or Stack MUST perform exactly one clearly defined function.**  
 They MUST NOT combine unrelated responsibilities within a single class.
 
 ---
 
-## Rule 2: Avoid Instantiating Other Stacks Inside Constructors
+## Avoid Instantiating Other Stacks Inside Constructors
 
 **Constructs and Stacks MUST NOT create instances of other Stack classes within their constructors.**  
 All cross-stack relationships MUST be wired in the app entry point to maintain clear deployment structure.
 
 ---
 
-## Rule 3: Pass Dependencies via Props
+## Pass Dependencies via Props
 
 **All dependencies MUST be provided through constructor properties.**  
 Constructs and Stacks MUST NOT create their own dependencies internally.
 
 ---
 
-## Rule 4: Use Environment Variables, Context, or Deployment Profiles for Account and Region
+## Use Environment Variables, Context, or Deployment Profiles for Account and Region
 
 **Stacks MUST retrieve AWS account and region configuration from environment variables, CDK context, or deployment profiles.**  
 Hardcoding AWS account IDs or regions is strictly forbidden.
 
 ---
 
-## Rule 5: Define Composition in app.ts
+## Define Composition in app.ts
 
 **All stack instantiation and dependency wiring MUST happen in the app entry point (`app.ts`).**  
 Stacks MUST NOT create or wire other stacks internally.
 
 ---
 
-## Rule 6: Prefer Outputs, Imports, or Parameter Store for Cross-Stack References
+## Prefer Outputs, Imports, or Parameter Store for Cross-Stack References
 
 **Cross-stack communication SHOULD prefer CloudFormation Outputs/Imports or parameter store values to maintain loose coupling.**  
 Direct construct references within the same app ARE acceptable when appropriate but SHOULD be used carefully to avoid tight coupling.
 
 ---
 
-## Rule 7: Minimize Direct Resource References Across Stacks
+## Minimize Direct Resource References Across Stacks
 
 **Stacks SHOULD minimize direct resource references across stacks to reduce deployment coupling.**  
 When needed, AWS CDK’s built-in cross-stack reference handling MAY be used thoughtfully.
 
 ---
 
-## Rule 8: Group Related Resources Into Cohesive Constructs
+## Group Related Resources Into Cohesive Constructs
 
 **Related AWS resources MUST be encapsulated into cohesive, well-defined Constructs.**  
 Constructs MUST expose only what is necessary to avoid leaking internal details.
 
 ---
 
-## Rule 9: Define Clear Boundaries for Environments
+## Define Clear Boundaries for Environments
 
 **Stacks MUST define clear boundaries for different deployment environments.**  
 Environment-specific logic MUST be handled via context variables or separate stack definitions.
 
 ---
 
-## Rule 10: Keep Construct Constructors Side-Effect Free
+## Keep Construct Constructors Side-Effect Free
 
 **Construct constructors MUST be free of side effects.**  
 They MUST only declare AWS resources and MUST NOT perform deployments, API calls, or mutate external state.
 
----
+**These rules MUST be strictly followed throughout the entire project. Any violation MUST be corrected before code is merged.**
+
+# 🛡️ AWS CDK Nag Policy Rules
+
+**Required Rule Packs**  
+All CDK stacks must be validated against the following CDK Nag rule packs:
+
+- `AwsSolutions`(AWS Solutions Library)
+- `NIST80053R5` (NIST 800-53 Revision 5)
+  Additional rule packs may be added as needed based on compliance scope.
+
+**CDK Nag Must Be Checked Explicitly**  
+You must include CDK Nag in a separate script (e.g., `nag-check.ts`) to validate AWS CDK stacks for security and compliance issues. These checks must not modify stack code.
+
+**Do Not Enforce CDK Nag at Deploy Time**  
+CDK Nag must not block or fail `cdk deploy`. It should be executed independently (e.g., via `npm run nag:check`) to maintain deploy flexibility while enforcing compliance.
+
+**No Automatic Suppressions**  
+You must not insert suppression rules unless explicitly instructed by a human. All suppressions must be manually reviewed and approved. Each suppression requires a distinct and explicit human approval. An approval granted for one suppression must not be reused or assumed valid for other suppressions.
+
+**Documented Suppressions Required**  
+Each suppression requires a distinct and explicit human approval. An approval granted for one suppression must not be reused or assumed valid for other suppressions. Every suppression must include a clear comment detailing:
+
+- Business justification
+- Risk assessment
+- Optional remediation plan and timeline
+- Approval authority or approver identity
+
+**Fail on Warning or Error**  
+ The CDK Nag check script must exit with status code `1` if any `error` messages are found during synthesis.
+
+**Verbose Output Required**  
+ CDK Nag must output detailed human-readable information, including the rule ID (e.g., `AwsSolutions-IAM4`) and the construct path where it failed.
+
+**CDK Nag Integration Must Be Reusable**  
+ CDK Nag logic must be modular (e.g., `nag-check.ts`) and designed to work across multiple stacks without duplication or hardcoding.
+
+**Custom Rule Support**  
+ The CDK Nag configuration must support adding custom organizational rules when applicable, using `NagPack` extensions.
+
+**Findings Reporting**  
+ CDK Nag findings must be exportable in structured format (e.g., JSON, CSV) for auditing and tracking security/compliance trends over time.
 
 **These rules MUST be strictly followed throughout the entire project. Any violation MUST be corrected before code is merged.**
 

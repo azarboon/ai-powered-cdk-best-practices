@@ -9,7 +9,7 @@
 
 This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated code quality checks, automated security checks, automated documentation updates.
 
-The app is developed using Amazon Q CLI. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in PROJECT_RULES.md. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a simple boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices.
+The app is developed using Amazon Q CLI. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in `.amazonq\rules\PROJECT_RULES.md`. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a simple boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices.
 
 Once this project is finalized, I plan to use it as a foundation for other projects—particularly those focused on scrutinizing error handling and troubleshooting across multiple AWS services. As a result, this app intentionally includes various integrations between AWS services that may not represent ideal real-world architecture but serve to demonstrate and test more complex scenarios.
 
@@ -48,13 +48,46 @@ https://docs.aws.amazon.com/cdk/v2/guide/best-practices.html
 
 You can update the project rules by editing the `./PROJECT_RULES.md` file.
 
-## Setup
+## ESLint Code Quality checks
+
+ALL TypeScript files MUST pass ESLint validation before every commit, with zero warning tolerance. This strict check does not run during deployment—I chose this for faster troubleshooting and development. See `.eslintrc.json` for details.
+
+ESLint ensures code and comment quality on all TS files in the project using a simplified, fast configuration with caching enabled for optimal performance.
+
+The pre-commit hook uses Husky. Below you can find more about its configuration and pre-commit flow.
+
+### **🔧 Husky Pre-Commit Configuration**
+
+Husky v8.0.3 auto-configures via `"prepare": "husky install"` in package.json during `npm install`. Sets Git's `core.hooksPath` to `.husky/` directory.
+
+File-based Git hooks are used via `.husky/` directory instead of configuring hooks in `package.json`.
+
+**Commit Flow**:
+
+1. `git commit` triggers the `.husky/pre-commit` hook script.
+2. This script runs `npm run check`, which performs linting, formatting, security checks, `cdk synth`, etc.
+3. The commit is blocked if any check fails.
+
+<!-- ========================================= -->
+<!-- END PROTECTED SECTION                    -->
+<!-- ========================================= -->
+
+---
+
+# **Setup**
+
+## Prerequisites
+
+- **Node.js 22+** and npm
+- **Docker v27.5** (for CDK Lambda bundling)
+- **AWS CLI v2.27** configured with your credentials
+- **AWS CDK CLI v2.1021.0**
 
 For development, I use VS Code installed on Microsoft Windows 10. I mainly use the integrated **WSL terminal in VS Code**.
 
-## 🐧 Terminal
+## 🐧 Terminal setup
 
-Here are my settings to replicate my environment.
+Here are my settings to replicate my terminal environment.
 
 **WSL Info**:
 
@@ -75,56 +108,14 @@ alias aws-version='aws --version'
 alias cdk-version='cdk --version'
 ```
 
-## ESLint Code Quality checks
+## Configure AWS credentials
 
-ALL TypeScript files MUST pass ESLint validation before every commit, with zero warning tolerance. This strict check does not run during deployment—I chose this for faster troubleshooting and development. See `.eslintrc.json` for details.
-
-ESLint ensures code and comment quality on all TS files in the project using a simplified, fast configuration with caching enabled for optimal performance.
-
-The pre-commit hook uses Husky. Below you can find more about its configuration and pre-commit flow.
-
-### **🔧 Husky Pre-Commit Configuration**
-
-**Setup**: Husky v8.0.3 auto-configures via `"prepare": "husky install"` in package.json during `npm install`. Sets Git's `core.hooksPath` to `.husky/` directory.
-
-**Pre-commit Flow**:
-
-1. `git commit` → `.husky/pre-commit` script
-2. Runs `npm run lint:fix` directly on all project files
-3. ESLint validates all TS files with caching (`--max-warnings 0 --cache`)
-4. Blocks commit if linting fails
-
-File-based hooks in `.husky/` instead of package.json config. Direct ESLint execution with comprehensive project-wide validation and caching for optimal performance.
-
-<!-- ========================================= -->
-<!-- END PROTECTED SECTION                    -->
-<!-- ========================================= -->
-
----
-
-### **🔧 ESLint Commands**
+## Configure environment variables
 
 ```bash
-# Check all files for linting issues (with caching)
-npm run lint
-
-# Auto-fix issues where possible (with caching)
-npm run lint:fix
-
-# Complete validation pipeline (build + synth, no linting)
-npm run validate
+# Edit the .env file with your actual values
+nano .env  # or use your preferred editor
 ```
-
-### **🚀 Developer Workflow**
-
-1. **Write code** following TypeScript best practices
-2. **Run `npm run lint:fix`** to auto-fix issues
-3. **Fix any remaining issues manually**
-4. **Commit** - pre-commit hook validates linting
-
-### **⚡ Quick Setup (Recommended)**
-
-For the fastest setup experience, use the automated setup script:
 
 ```bash
 # Clone the repository
@@ -133,7 +124,11 @@ cd q-sample
 
 ```
 
-**Setup**
+## Ensure Project Rules Are Fed into the Coding Agent
+
+When using the Amazon Q CLI terminal (or any other coding agent), ensure it has access to your project context by placing the rules file at:
+
+`.amazonq\rules\PROJECT_RULES.md`
 
 ```bash
 npm install          # Install dependencies
@@ -142,34 +137,6 @@ npm run prepare      # Setup pre-commit hooks
 ```
 
 ---
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Node.js 22+** and npm
-- **Docker v27.5** (for CDK Lambda bundling)
-- **AWS CLI v2.27** configured with your credentials
-- **AWS CDK CLI v2.1021.0**
-
-### Environment Setup
-
-Setup AWS configure
-
-Configure environment variables in .env:
-
-```bash
-# Edit the .env file with your actual values
-nano .env  # or use your preferred editor
-```
-
-### Automated Deployment
-
-1. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
 
 @mahdi: try to deploy manually to check if deploy.sh is needed. if not, remove it 2. **Deploy using automated script (Recommended):**
 
@@ -186,33 +153,19 @@ This script will:
 - Deploy the stack
 - Display webhook URL for GitHub configuration
 
-### Manual Deployment
-
-If you prefer manual deployment:
-
 ```bash
-# Validate code quality and build
-npm run validate
 
+npm run build
+
+npm run deploy
+
+
+@mahdi/: check if this is needed
 # Bootstrap CDK (first time only)
 cdk bootstrap
 
 # Deploy the stack
 npm run deploy
-```
-
-After deployment, the script will display:
-
-```
-🎯 GitHub Webhook URL:
-   https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod/webhook
-
-📝 Next Steps:
-   1. Go to: https://github.com/your-username/your-repo/settings/hooks
-   2. Add webhook with URL: https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod/webhook
-   3. Set Content type: application/json
-   4. Select 'Just the push event'
-   5. Ensure webhook is Active
 ```
 
 Confirm Email Subscription
@@ -242,14 +195,7 @@ To remove all resources and avoid ongoing costs:
 cdk destroy
 ```
 
-### Development Workflow
-
-- **Before changes:** `npm run validate` (runs build + synth, no linting)
-- **Code quality:** `npm run lint:fix` (enforced at commit time)
-- **Build only:** `npm run build`
-- **Deploy with validation:** `npm run deploy` (build + deploy, no linting)
-
-All configuration is managed through environment variables (no hardcoded values):
+All configuration is managed through environment variables (no hardcoded values)
 
 ## 📊 Architecture Diagram
 
