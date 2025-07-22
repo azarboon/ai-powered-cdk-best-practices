@@ -130,13 +130,15 @@ When using the Amazon Q CLI terminal (or any other coding agent), ensure it has 
 
 `.amazonq\rules\PROJECT_RULES.md`
 
+`q chat > /context add .amazonq/rules/*.md README.md`
+
+---
+
 ```bash
 npm install          # Install dependencies
 npm run prepare      # Setup pre-commit hooks
 ./.husky/pre-commit  # Test hook (optional)
 ```
-
----
 
 @mahdi: try to deploy manually to check if deploy.sh is needed. if not, remove it 2. **Deploy using automated script (Recommended):**
 
@@ -273,3 +275,60 @@ All configuration is managed through environment variables (no hardcoded values)
 ├── tsconfig.json               # TypeScript configuration
 └── README.md                   # This file
 ```
+
+## 🔌 Model Context Protocol (MCP) Integration
+
+This project integrates with various AWS MCP servers to provide contextual and up-to-date guidance to AI assistants such as Amazon Q. You may choose to use one or multiple MCP servers depending on your project needs.
+
+The MCP configuration file is located at:
+`.amazonq\mcp.json`
+
+Some MCP servers—such as `awslabs.aws-api-mcp-server`—require local installation, while others like `aws-knowledge-mcp-server` are remote and require no setup.
+
+The following steps were executed using the WSL terminal in VS Code to install and configure `awslabs.aws-api-mcp-server`:
+
+**Create a Python virtual environment** (Python 3.10+ required):
+
+```bash
+python3 -m venv ~/aws-mcp-env
+source ~/aws-mcp-env/bin/activate
+```
+
+**Install the AWS API MCP Server**:
+
+```bash
+pip install awslabs.aws-api-mcp-server
+```
+
+**Activate the virtual environment**:
+
+```bash
+source ~/aws-mcp-env/bin/activate
+```
+
+**Configure AWS credentials**:
+
+```bash
+aws configure
+```
+
+**Start the `awslabs.aws-api-mcp-server` in a separate terminal**:
+
+```bash
+source ~/aws-mcp-env/bin/activate
+export AWS_REGION=us-east-1
+python -m awslabs.aws_api_mcp_server.server
+```
+
+> **Important**: The `awslabs.aws-api-mcp-server` must be running in a separate terminal before starting the Amazon Q CLI.
+
+To list configured MCP servers:
+`q mcp list`
+
+**Start Amazon Q CLI with MCP support in another terminal**:
+
+```bash
+q chat
+```
+
+To confirm Amazon Q is using the MCP servers, you can ask it directly within the chat session.
