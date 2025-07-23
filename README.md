@@ -121,18 +121,7 @@ nano .env  # or use your preferred editor
 # Clone the repository
 git clone <repository-url>
 cd q-sample
-
 ```
-
-## Ensure Project Rules Are Fed into the Coding Agent
-
-When using the Amazon Q CLI terminal (or any other coding agent), ensure it has access to your project context by placing the rules file at:
-
-`.amazonq\rules\PROJECT_RULES.md`
-
-`q chat > /context add .amazonq/rules/*.md README.md`
-
----
 
 ```bash
 npm install          # Install dependencies
@@ -276,6 +265,20 @@ All configuration is managed through environment variables (no hardcoded values)
 └── README.md                   # This file
 ```
 
+## Ensure Project Rules Are Fed into the Q Cli or your Coding Agent
+
+When using the Amazon Q CLI terminal (or any other coding agent), ensure it has access to your project context by placing the rules file at:
+
+`.amazonq\rules\PROJECT_RULES.md`
+
+You can add a hook in Q CLI to automatically load all `.md` rule files at the start of each `q chat` session:
+
+`q>/hooks add --trigger conversation_start --command 'for f in .amazonq/rules/*.md; do q context add "$f"; done' add_rules_on_start`
+
+You can verify the added rules by running:
+
+`q>/context show`
+
 ## 🔌 Model Context Protocol (MCP) Integration
 
 This project integrates with various AWS MCP servers to provide contextual and up-to-date guidance to AI assistants such as Amazon Q. You may choose to use one or multiple MCP servers depending on your project needs.
@@ -314,13 +317,17 @@ aws configure
 
 **Start the `awslabs.aws-api-mcp-server` in a separate terminal**:
 
+@mahdi: check what does ~/aws-mcp-env/bin/activate and put the content in repo if necessary. else automate or remove it. Also check if you can somehow automate export AWS_REGION=us-east-1
+
 ```bash
-source ~/aws-mcp-env/bin/activate
+source scripts/activate_aws_api_mcp_server
 export AWS_REGION=us-east-1
 python -m awslabs.aws_api_mcp_server.server
 ```
 
 > **Important**: The `awslabs.aws-api-mcp-server` must be running in a separate terminal before starting the Amazon Q CLI.
+
+You can test whether it's actually running by `ps aux | grep awslabs.aws_api_mcp_server.server`. If the server is running, you'd see a Python process like `python -m awslabs.aws_api_mcp_server.server`
 
 To list configured MCP servers:
 `q mcp list`
@@ -329,6 +336,8 @@ To list configured MCP servers:
 
 ```bash
 q chat
+
+"which mcp servers are you using now?"
 ```
 
-To confirm Amazon Q is using the MCP servers, you can ask it directly within the chat session.
+As of this writing, the only reliable way to confirm that Amazon Q is utilizing the configured MCP servers is to explicitly ask within an active chat session. Despite q mcp list showing the active MCP servers, there appears to be a disconnect: Amazon Q does not automatically disclose MCP usage unless directly prompted in q chat.
