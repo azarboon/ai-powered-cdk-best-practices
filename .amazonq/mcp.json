@@ -1,5 +1,14 @@
 {
   "mcpServers": {
+    "awslabs.aws-api-mcp-server": {
+      "command": "uvx",
+      "args": ["awslabs.aws-api-mcp-server@latest"],
+      "env": {
+        "AWS_REGION": "us-east-1"
+      },
+      "disabled": false,
+      "autoApprove": []
+    },
     "aws-knowledge-mcp-server": {
       "command": "uvx",
       "args": ["mcp-proxy", "--transport", "streamablehttp", "https://knowledge-mcp.global.api.aws"]

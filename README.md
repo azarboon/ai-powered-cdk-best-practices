@@ -281,11 +281,38 @@ You can verify the added rules by running:
 
 ## 🔌 Model Context Protocol (MCP) Integration
 
-This project integrates with various AWS MCP servers to provide contextual and up-to-date guidance to AI assistants such as Amazon Q. You may choose to use one or multiple MCP servers depending on your project needs.
+The MCP server configuration is defined in `.amazonq/mcp.json`. This project includes both remote and local MCP server configurations:
 
-The MCP configuration file is located at:
-`.amazonq\mcp.json`
+- awslabs.aws-api-mcp-server
+- aws-knowledge-mcp-server
 
-Some MCP servers—such as `awslabs.aws-api-mcp-server`—require local installation, while others like `aws-knowledge-mcp-server` are remote and require no setup.
+### Setting up awslabs.aws-api-mcp-server
 
-@azarboon:setup `aws-api-mcp-server` using uv and see whether it works
+The AWS API MCP Server enables Amazon Q CLI to generate, validate, and execute AWS CLI commands through natural language.
+
+#### One-Time Installation
+
+```bash
+# Install uv (Python packaging tool)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install AWS API MCP Server
+uvx --from 'mcp-server-aws-api' mcp-server-aws-api
+```
+
+#### Runtime Setup (Before Each Q CLI Session)
+
+Before launching Amazon Q CLI, ensure the MCP server is running and your AWS credentials are configured:
+
+```bash
+# Set up AWS credentials
+aws configure
+
+# Terminal 1: Start the MCP server
+AWS_REGION=us-east-1 uvx awslabs.aws-api-mcp-server@latest
+
+# Terminal 2: Start Amazon Q CLI
+q chat > "test whether you can actually use mcp-server-aws-api?"
+```
+
+Note: As of writing, the AWS API MCP Server may exhibit unstable behavior. To confirm it is in use, explicitly ask Amazon Q within the session to verify MCP functionality.
