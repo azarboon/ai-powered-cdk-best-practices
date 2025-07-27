@@ -281,14 +281,13 @@ You can verify the added rules by running:
 
 ## 🔌 Model Context Protocol (MCP) Integration
 
-The MCP server configuration is defined in `.amazonq/mcp.json`. This project includes both remote and local MCP server configurations:
+The MCP server configuration is located in `.amazonq/mcp.json`. This project supports both remote and local MCP server configurations:
 
-- awslabs.aws-api-mcp-server
-- aws-knowledge-mcp-server
+- [aws-knowledge-mcp-server](https://github.com/awslabs/mcp/tree/main/src/aws-knowledge-mcp-server) – remote MCP server
+- [awslabs.aws-api-mcp-server](https://github.com/awslabs/mcp/tree/main/src/aws-api-mcp-server) – local MCP (requires installation and manual startup)
+- [awslabs.cdk-mcp-server](https://github.com/awslabs/mcp/tree/main/src/cdk-mcp-server) – local MCP (requires installation and manual startup)
 
-### Setting up awslabs.aws-api-mcp-server
-
-The AWS API MCP Server enables Amazon Q CLI to generate, validate, and execute AWS CLI commands through natural language.
+### Local MCP Server Setup
 
 #### One-Time Installation
 
@@ -298,21 +297,32 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install AWS API MCP Server
 uvx --from 'mcp-server-aws-api' mcp-server-aws-api
+
+# Install AWS CDK MCP Server
+uvx --from 'awslabs.cdk-mcp-server' awslabs.cdk-mcp-server
 ```
 
 #### Runtime Setup (Before Each Q CLI Session)
 
-Before launching Amazon Q CLI, ensure the MCP server is running and your AWS credentials are configured:
+Prior to starting Amazon Q CLI, ensure the local MCP servers are running and your AWS credentials are properly configured:
 
 ```bash
 # Set up AWS credentials
 aws configure
 
-# Terminal 1: Start the MCP server
+# Terminal 1: Start the AWS API MCP server
 AWS_REGION=us-east-1 uvx awslabs.aws-api-mcp-server@latest
 
-# Terminal 2: Start Amazon Q CLI
-q chat > "test whether you can actually use mcp-server-aws-api?"
+# Terminal 2: Start the AWS CDK MCP server
+uvx awslabs.aws-api-mcp-server@latest
 ```
 
-Note: As of writing, the AWS API MCP Server may exhibit unstable behavior. To confirm it is in use, explicitly ask Amazon Q within the session to verify MCP functionality.
+To verify that both MCP servers are active, run:
+
+`ps aux | grep "awslabs\.(aws-api-mcp-server\|cdk-mcp-server\)"`
+
+Start Amazon Q CLI in a third terminal:
+
+`q chat > "test which MCP servers are you able to use?"`
+
+**Note:** At the time of writing, local MCP servers—particularly the AWS API MCP Server—may show unstable behavior. To confirm MCP server usage, explicitly ask Amazon Q within the session to verify MCP integration status.
