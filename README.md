@@ -5,7 +5,7 @@
 
 <!-- NOTE to self: start WSL terminal, update aws account id and email in .env.template, then aws configure, then run q command line -->
 
-# Boilerplate for AWS CDK TypeScript Best Practices and Effective Amazon Q Development
+# AI-Powered Serverless Boilerplate with AWS CDK and TypeScript Following Best Practices
 
 This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated code quality checks, automated security checks, automated documentation updates.
 
