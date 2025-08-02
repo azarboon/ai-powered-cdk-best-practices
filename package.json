@@ -33,7 +33,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@aws-sdk/client-eventbridge": "^3.0.0",
+    "@aws-sdk/client-sns": "^3.0.0",
     "aws-cdk-lib": "^2.206.0",
     "constructs": "^10.0.0"
   }

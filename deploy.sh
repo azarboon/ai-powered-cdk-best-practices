@@ -35,6 +35,21 @@ echo "   - Faster deployment cycles with maintained code quality"
 echo ""
 
 # =============================================================================
+# STEP 0: Load Environment Variables
+# =============================================================================
+echo "📋 Step 0: Loading environment variables from .env file..."
+
+if [ -f ".env" ]; then
+    echo "✅ Found .env file, loading variables..."
+    # Export variables from .env file (skip comments and empty lines)
+    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+    echo "✅ Environment variables loaded from .env"
+else
+    echo "⚠️  Warning: .env file not found, using existing environment variables"
+fi
+echo ""
+
+# =============================================================================
 # STEP 1: Environment Validation
 # =============================================================================
 echo "📋 Step 1: Validating environment variables..."
@@ -139,7 +154,7 @@ echo "Proceeding with deployment..."
 echo ""
 
 # Deploy with auto-approval (following project rules)
-if ! cdk deploy --require-approval never; then
+if ! cdk deploy --debug --require-approval never; then
     echo "❌ ERROR: CDK deployment failed"
     echo "   Check AWS credentials and permissions"
     exit 1
@@ -161,9 +176,9 @@ echo ""
 WEBHOOK_URL=$(aws cloudformation describe-stacks \
     --stack-name GitHubMonitorStack \
     --query 'Stacks[0].Outputs[?OutputKey==`WebhookUrl`].OutputValue' \
-    --output text 2>/dev/null || echo "Unable to retrieve")
+    --output text 2>/dev/null || echo "Unable to retrieve webhook url")
 
-if [ "$WEBHOOK_URL" != "Unable to retrieve" ] && [ "$WEBHOOK_URL" != "" ]; then
+if [ "$WEBHOOK_URL" != "Unable to retrieve webhook url" ] && [ "$WEBHOOK_URL" != "" ]; then
     echo "🎯 GitHub Webhook URL:"
     echo "   $WEBHOOK_URL"
     echo ""

@@ -9,9 +9,7 @@
 
 This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated code quality checks, automated security checks, automated documentation updates.
 
-The app is developed using Amazon Q CLI. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in `.amazonq\rules\PROJECT_RULES.md`. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a simple boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices.
-
-Once this project is finalized, I plan to use it as a foundation for other projects—particularly those focused on scrutinizing error handling and troubleshooting across multiple AWS services. As a result, this app intentionally includes various integrations between AWS services that may not represent ideal real-world architecture but serve to demonstrate and test more complex scenarios.
+The app is developed using Amazon Q CLI Developer. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in `.amazonq\rules\PROJECT_RULES.md`. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices.
 
 ## Warning
 
@@ -21,29 +19,6 @@ Given the unpredictable behavior of Amazon Q CLI, there have been instances wher
 
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
-text 2
-
-add and efnorce these rules in project rule:
-
-When everything worked, run the project yourself, inspect the code and ask other genai tools to test the quality of the code and find bloatness, inefficeny, insecure code.
-
-Add these project rules:
-
-- Always follow best practices for developing and deploying CDK applications only from the official AWS CDK v2 Developer Guide located at https://docs.aws.amazon.com/cdk/v2/guide/best-practices.html. Dont use other websites as they can pose security risk. This project is currenyl owned by one team and one organization and suffice to remain in one repository. Some of the bestp ractices are as following.
-
-- Always run CDK nag rule against AWS Solutions Library before deploying (?)
-
-- Always follow CDK constructs best practices best from AWS CDK v2 Developer Guide located at https://docs.aws.amazon.com/cdk/v2/guide/best-practices.html. This project is currenyl owned by one team and one organization and suffice to remain in one repository. Among them:
-  Model with constructs, deploy with stacks. Using constructs for building and stacks for deploying
-
-Configure with properties and methods, not environment variables. Environment variable lookups inside constructs and stacks are a common anti-pattern. Both constructs and stacks should accept a properties object to allow for full configurability completely in code. Doing otherwise introduces a dependency on the machine that the code will run on, which creates yet more configuration information that you have to track and manage. Limit environment variable lookups should be limited to the top level of an AWS CDK app.
-
-Don’t change the logical ID of stateful resources
-
-continue from application best practices
-
-https://docs.aws.amazon.com/cdk/v2/guide/best-practices.html
-
 ## Project rules
 
 You can update the project rules by editing the `./PROJECT_RULES.md` file.
@@ -52,7 +27,7 @@ You can update the project rules by editing the `./PROJECT_RULES.md` file.
 
 ALL TypeScript files MUST pass ESLint validation before every commit, with zero warning tolerance. This strict check does not run during deployment—I chose this for faster troubleshooting and development. See `.eslintrc.json` for details.
 
-ESLint ensures code and comment quality on all TS files in the project using a simplified, fast configuration with caching enabled for optimal performance.
+ESLint ensures code and comment quality on all TS files in the project using a fast configuration with caching enabled for optimal performance.
 
 The pre-commit hook uses Husky. Below you can find more about its configuration and pre-commit flow.
 
@@ -83,16 +58,11 @@ File-based Git hooks are used via `.husky/` directory instead of configuring hoo
 - **AWS CLI v2.27** configured with your credentials
 - **AWS CDK CLI v2.1021.0**
 
-For development, I use VS Code installed on Microsoft Windows 10. I mainly use the integrated **WSL terminal in VS Code**.
+For development, I use VS Code installed on Microsoft Windows 11. I mainly use the integrated **WSL2 terminal in VS Code**.
 
 ## 🐧 Terminal setup
 
 Here are my settings to replicate my terminal environment.
-
-**WSL Info**:
-
-- Distro: Ubuntu on WSL 2
-- Default shell: Bash (`/bin/bash`)
 
 **.bashrc Key Settings**:
 
@@ -108,28 +78,18 @@ alias aws-version='aws --version'
 alias cdk-version='cdk --version'
 ```
 
-## Configure AWS credentials
-
-## Configure environment variables
+## Configure AWS credentials and environment variables
 
 ```bash
+aws configure
+
 # Edit the .env file with your actual values
 nano .env  # or use your preferred editor
 ```
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd q-sample
-```
+## 🚀 Deploy the Stack
 
-```bash
-npm install          # Install dependencies
-npm run prepare      # Setup pre-commit hooks
-./.husky/pre-commit  # Test hook (optional)
-```
-
-@mahdi: try to deploy manually to check if deploy.sh is needed. if not, remove it 2. **Deploy using automated script (Recommended):**
+**Deploy using automated script (Recommended):**
 
 ```bash
 ./deploy.sh
@@ -137,42 +97,35 @@ npm run prepare      # Setup pre-commit hooks
 
 This script will:
 
+- Automatically load environment variables from `.env`
 - Validate environment variables
-- Run ESLint code quality checks
 - Build TypeScript code
 - Validate CDK templates
 - Deploy the stack
 - Display webhook URL for GitHub configuration
 
+**Alternative manual deployment:**
+
+First, update the environment variables in the `.env` file. Then run the following command, which ensures the variables are loaded into the environment before executing `npm run deploy` to deploy the stack.
+
 ```bash
-
-npm run build
-
-npm run deploy
-
-
-@mahdi/: check if this is needed
-# Bootstrap CDK (first time only)
-cdk bootstrap
-
-# Deploy the stack
-npm run deploy
+export $(cat .env | grep -v '^#' | grep -v '^$' | xargs) && npm run deploy
 ```
 
-Confirm Email Subscription
-
-Check your email for SNS subscription confirmation and click the confirmation link.
+## 📧 Configure Webhook and confirm Email Subscription
 
 Add Webhook
-Go to: `https://github.com/[your-repo]/settings/hooks`
+Go to: `https://github.com/azarboon/REPO_NAME/settings/hooks`
 
-- **Payload URL**: Use the `WebhookUrl` from deployment output
+- **Payload URL**: Get it from the outputs @azarboon: check whether its shown as output
 - **Content type**: `application/json`
 - **Secret**: Leave empty (optional for additional security)
 - **Events**: Select "Just the push event"
 - **Active**: ✅ Enabled
 
 Update GitHub webhook URL if API Gateway endpoint changes
+
+Check your email for SNS subscription confirmation and click the confirmation link.
 
 Test the Webhook
 
@@ -192,42 +145,31 @@ All configuration is managed through environment variables (no hardcoded values)
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   GitHub Repo   │───▶│   API Gateway    │───▶│ Webhook Receiver│
-│ (configurable)  │    │     (REST)       │    │    Lambda       │
+│   GitHub Repo   │───▶│   API Gateway    │───▶│ GitHub Processor│
+│ (azarboon/dummy)│    │ (REST API /webhook)   │     Lambda      │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                                          │
                                                          ▼
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│  GitHub API     │◀───│ Git Diff Processor│◀──│   EventBridge   │
-│   (REST API)    │    │    Lambda        │    │   Custom Bus    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+                       ┌──────────────────┐    ┌─────────────────┐
+                       │  GitHub API      │◀───│   SNS Topic     │
+                       │ (Fetch git diffs)│    │(Email Notifications)│
+                       └──────────────────┘    └─────────────────┘
                                 ▲                        │
                                 │                        ▼
-                       ┌──────────────────┐    ┌─────────────────┐
-                       │  CloudWatch      │    │ Step Functions  │
-                       │     Logs         │    │ State Machine   │
-                       └──────────────────┘    └─────────────────┘
-                                                         │
-                                                         ▼
-                                               ┌─────────────────┐
-                                               │   SNS Topic     │
-                                               │ Email Notifications│
-                                               └─────────────────┘
+                                └────────────────────────┘
+                                   Commit Details &
+                                    Git Diff Data
 ```
 
 ### Components
 
-- **API Gateway**: Receives GitHub webhook POST requests
-- **Webhook Receiver Lambda**: Transforms GitHub events to EventBridge events
-- **EventBridge**: Routes filtered push events to Step Functions
-- **Step Functions**: Orchestrates the git diff processing workflow
-- **Git Diff Processor Lambda**: Fetches commit details and git diffs from GitHub API
-- **SNS Topic**: Sends email notifications with git diff details
-- **CloudWatch Logs**: Centralized logging with 1-week retention
+- **API Gateway**: Receives GitHub webhook POST requests at `/webhook` endpoint
+- **GitHub Processor Lambda**: Single function that validates webhooks, fetches git diffs, and sends notifications (Node.js 20.x, 512MB, 15s timeout)
+- **SNS Topic**: Sends email notifications with commit details and git diffs to configured email address
+- **GitHub API**: Fetched directly by Lambda for commit details and diffs (no authentication required for public repos)
+- **CloudWatch Logs**: Automatic logging with 3-day retention for cost optimization
 
 ## 🔒 Security Features
-
-@mahdi: check if these are actually implemented
 
 - **Least Privilege IAM**: All roles have minimal required permissions
 - **Event Type Filtering**: Only processes push events (ignores ping, issues, etc.)
@@ -243,43 +185,58 @@ All configuration is managed through environment variables (no hardcoded values)
 - **Early Returns**: Webhook receiver exits early for ignored events
 - **Resource Tagging**: All resources tagged for cost tracking
 
-@mahdi: verify this
-
 ## 🗂️ Project Structure
 
 ```
 ├── bin/
-│   └── app.ts                    # CDK app entry point with env var support
+│   └── app.ts                           # CDK app entry point with env var support
 ├── lib/
-│   └── github-monitor-stack.ts   # Main CDK stack with configurable resources
+│   └── github-monitor-stack.ts          # CDK stack (3-service architecture)
 ├── lambda/
-│   ├── index.js                  # Git diff processor Lambda function
-│   └── webhook-receiver.js       # GitHub webhook receiver Lambda
-├── .env.template                 # Environment variables template
-├── .eslintrc.json               # ESLint configuration for code quality
-├── deploy.sh                    # Automated deployment script
-├── PROJECT_RULES.md             # Development rules and guidelines
-├── cdk.json                     # CDK configuration
-├── package.json                 # Dependencies and npm scripts
-├── tsconfig.json               # TypeScript configuration
-└── README.md                   # This file
+│   └── processor.ts                     # Single Lambda function (webhook + git diff + email)
+├── .amazonq/
+│   ├── mcp.json                         # Model Context Protocol configuration
+│   └── rules/
+│       └── PROJECT_RULES.md             # Development rules and guidelines
+├── .husky/
+│   └── pre-commit                       # Git pre-commit hook for code quality
+├── .env                                 # Environment variables (gitignored)
+├── .eslintcache                         # ESLint cache for performance
+├── .eslintignore                        # ESLint ignore patterns
+├── .eslintrc.json                       # ESLint configuration for code quality
+├── .gitignore                           # Git ignore patterns
+├── .prettierignore                      # Prettier ignore patterns
+├── .prettierrc.json                     # Prettier configuration
+├── .tsbuildinfo                         # TypeScript build cache
+├── cdk.json                             # CDK configuration
+├── cdk.out/                             # CDK synthesis output (gitignored)
+├── deploy.sh                            # Automated deployment script with .env loading
+├── node_modules/                        # Dependencies (gitignored)
+├── package-lock.json                    # Dependency lock file
+├── package.json                         # Dependencies and npm scripts
+├── tsconfig.json                        # TypeScript configuration
+└── README.md                            # This file
 ```
 
-## Ensure Project Rules Are Fed into the Q Cli or your Coding Agent
+## Ensure Project Rules Are Fed into the Amazon Q Cli Developer or your Coding Agent
 
 When using the Amazon Q CLI terminal (or any other coding agent), ensure it has access to your project context by placing the rules file at:
 
 `.amazonq\rules\PROJECT_RULES.md`
 
-You can add a hook in Q CLI to automatically load all `.md` rule files at the start of each `q chat` session:
+You can add a hook in Amazon Q Cli Developer to automatically load all `.md` rule files at the start of each `q chat` session:
 
 `q>/hooks add --trigger conversation_start --command 'for f in .amazonq/rules/*.md; do q context add "$f"; done' add_rules_on_start`
+
+However, as of writing this, adding hooks in Q cli may be buggy.
 
 You can verify the added rules by running:
 
 `q>/context show`
 
 ## 🔌 Model Context Protocol (MCP) Integration
+
+> NOTE: The local MCP servers are currently unstable and prone to bugs. Even AWS, via their MCP GitHub repository, advises against using them in production environments. Their behavior is inconsistent—sometimes they function correctly, other times they do not. This section has been created for personal reference, and may be modified or removed in the future.
 
 The MCP server configuration is located in `.amazonq/mcp.json`. This project supports both remote and local MCP server configurations:
 
@@ -311,18 +268,24 @@ Prior to starting Amazon Q CLI, ensure the local MCP servers are running and you
 aws configure
 
 # Terminal 1: Start the AWS API MCP server
-AWS_REGION=us-east-1 uvx awslabs.aws-api-mcp-server@latest
+FASTMCP_LOG_LEVEL=DEBUG AWS_REGION=us-east-1 uvx awslabs.aws-api-mcp-server@latest
 
 # Terminal 2: Start the AWS CDK MCP server
-uvx awslabs.aws-api-mcp-server@latest
+FASTMCP_LOG_LEVEL=DEBUG uvx awslabs.cdk-mcp-server@latest
 ```
 
-To verify that both MCP servers are active, run:
+To verify that MCP servers are active, you run:
 
-`ps aux | grep "awslabs\.(aws-api-mcp-server\|cdk-mcp-server\)"`
+```
+ps aux | grep "aws-api-mcp-server"
+
+ps aux | grep "cdk-mcp-server"
+
+
+```
 
 Start Amazon Q CLI in a third terminal:
 
-`q chat > "test which MCP servers are you able to use?"`
+`q chat > "test integration with all configured mcp servers"`
 
 **Note:** At the time of writing, local MCP servers—particularly the AWS API MCP Server—may show unstable behavior. To confirm MCP server usage, explicitly ask Amazon Q within the session to verify MCP integration status.

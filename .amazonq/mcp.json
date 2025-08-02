@@ -4,7 +4,8 @@
       "command": "uvx",
       "args": ["awslabs.aws-api-mcp-server@latest"],
       "env": {
-        "AWS_REGION": "us-east-1"
+        "AWS_REGION": "us-east-1",
+        "FASTMCP_LOG_LEVEL": "DEBUG"
       },
       "disabled": false,
       "autoApprove": []
@@ -13,14 +14,22 @@
       "command": "uvx",
       "args": ["awslabs.cdk-mcp-server@latest"],
       "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
+        "FASTMCP_LOG_LEVEL": "DEBUG"
       },
       "disabled": false,
       "autoApprove": []
     },
     "aws-knowledge-mcp-server": {
       "command": "uvx",
-      "args": ["mcp-proxy", "--transport", "streamablehttp", "https://knowledge-mcp.global.api.aws"]
+      "args": [
+        "mcp-proxy",
+        "--transport",
+        "streamablehttp",
+        "https://knowledge-mcp.global.api.aws"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "DEBUG"
+      }
     }
   }
 }
