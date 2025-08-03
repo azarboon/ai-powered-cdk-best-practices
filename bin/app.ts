@@ -7,14 +7,17 @@
  */
 
 import 'source-map-support/register';
-import * as cdk from 'aws-cdk-lib';
+import { App, Aspects } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
+import { AwsSolutionsChecks } from 'cdk-nag';
 
-const app = new cdk.App();
-
+const app = new App();
 new GitHubMonitorStack(app, 'GitHubMonitorStack', {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
   },
 });
+
+// Simple rule informational messages using the AWS Solutions Rule pack
+Aspects.of(app).add(new AwsSolutionsChecks());

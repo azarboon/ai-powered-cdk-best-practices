@@ -3,8 +3,6 @@
 <!-- AI ASSISTANTS: DO NOT EDIT ANYTHING BETWEEN THESE MARKERS UNTIL AFTER IT EXPLICITLY SAYS "END PROTECTED SECTION"  -->
 <!-- ========================================= -->
 
-<!-- NOTE to self: start WSL terminal, update aws account id and email in .env.template, then aws configure, then run q command line -->
-
 # AI-Powered Serverless Boilerplate with AWS CDK and TypeScript Following Best Practices
 
 This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated code quality checks, automated security checks, automated documentation updates.
@@ -23,25 +21,34 @@ Given the unpredictable behavior of Amazon Q CLI, there have been instances wher
 
 You can update the project rules by editing the `./PROJECT_RULES.md` file.
 
-## ESLint Code Quality checks
+## Development Flow and Automated Checks
 
-ALL TypeScript files MUST pass ESLint validation before every commit, with zero warning tolerance. This strict check does not run during deployment—I chose this for faster troubleshooting and development. See `.eslintrc.json` for details.
+To streamline development, a set of automated checks has been configured to run before each commit. However, it’s recommended that you manually run these checks before both committing and deploying. Use:
 
-ESLint ensures code and comment quality on all TS files in the project using a fast configuration with caching enabled for optimal performance.
+```bash
+npm run check
+```
 
-The pre-commit hook uses Husky. Below you can find more about its configuration and pre-commit flow.
+This runs the full validation suite. The pre-commit process is powered by **Husky**, which automates these checks as part of the Git workflow. Details are outlined below.
 
-### **🔧 Husky Pre-Commit Configuration**
+### Pre-Commit Workflow
 
-Husky v8.0.3 auto-configures via `"prepare": "husky install"` in package.json during `npm install`. Sets Git's `core.hooksPath` to `.husky/` directory.
+1. Running `git commit` triggers the `.husky/pre-commit` hook script.
+2. This script executes `npm run check`, which performs all necessary validations.
+3. If any check fails, the commit is blocked.
 
-File-based Git hooks are used via `.husky/` directory instead of configuring hooks in `package.json`.
+### ✅ Automated Checks (`npm run check`)
 
-**Commit Flow**:
+- **ESLint:** All TypeScript files must pass linting with zero tolerance for warnings. Configuration is defined in `.eslintrc.json`. Caching is enabled for performance.
+- **Security Audit:** `npm run audit` detects vulnerable npm dependencies. The process fails if any are found.
+- **Code Formatting:** Enforces formatting rules defined in `.prettierrc.json`.
+- **CDK Security Scan:** Performs automated security checks using **AWS CDK Nag** against rules from the [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md).
 
-1. `git commit` triggers the `.husky/pre-commit` hook script.
-2. This script runs `npm run check`, which performs linting, formatting, security checks, `cdk synth`, etc.
-3. The commit is blocked if any check fails.
+### 🔧 Husky Pre-Commit Configuration
+
+Husky v8.0.3 is installed via the `"prepare": "husky install"` script in `package.json` during `npm install`. This sets Git’s `core.hooksPath` to the `.husky/` directory.
+
+Git hooks are managed through files in the `.husky/` directory, rather than being embedded in `package.json`. This approach provides greater flexibility and clearer hook management.
 
 <!-- ========================================= -->
 <!-- END PROTECTED SECTION                    -->
@@ -59,8 +66,6 @@ File-based Git hooks are used via `.husky/` directory instead of configuring hoo
 - **AWS CDK CLI v2.1021.0**
 
 For development, I use VS Code installed on Microsoft Windows 11. I mainly use the integrated **WSL2 terminal in VS Code**.
-
-## 🐧 Terminal setup
 
 Here are my settings to replicate my terminal environment.
 
@@ -83,8 +88,8 @@ alias cdk-version='cdk --version'
 ```bash
 aws configure
 
-# Edit the .env file with your actual values
-nano .env  # or use your preferred editor
+# Edit the .env file with your actual values, else you may get error in later stages
+nano .env
 ```
 
 ## 🚀 Deploy the Stack
@@ -161,17 +166,11 @@ All configuration is managed through environment variables (no hardcoded values)
                                     Git Diff Data
 ```
 
-### Components
-
-- **API Gateway**: Receives GitHub webhook POST requests at `/webhook` endpoint
-- **GitHub Processor Lambda**: Single function that validates webhooks, fetches git diffs, and sends notifications (Node.js 20.x, 512MB, 15s timeout)
-- **SNS Topic**: Sends email notifications with commit details and git diffs to configured email address
-- **GitHub API**: Fetched directly by Lambda for commit details and diffs (no authentication required for public repos)
-- **CloudWatch Logs**: Automatic logging with 3-day retention for cost optimization
-
 ## 🔒 Security Features
 
-- **Least Privilege IAM**: All roles have minimal required permissions
+@azarboon: validates if these are actually true
+
+- **Least Privilege IAM**: All roles have minimal required permissions @azarboon:check for any automated test for this
 - **Event Type Filtering**: Only processes push events (ignores ping, issues, etc.)
 - **No Hardcoded Credentials**: Uses IAM roles and environment variables
 - **Environment Variable Configuration**: All sensitive values externalized

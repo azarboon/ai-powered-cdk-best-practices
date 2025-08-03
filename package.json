@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "security:check": "npm audit --audit-level=low",
     "security:fix": "npm audit fix --force",
-    "check": "npm run security:check && npm run format:check && npm run lint:check && npm run build:check && npm run synth",
+    "nag:check": "export $(cat .env | grep -v '^#' | grep -v '^$' | xargs) && npm run synth",
+    "check": "npm run security:check && npm run format:check && npm run lint:check && npm run build:check && npm run nag:check",
     "prepare": "husky install"
   },
   "devDependencies": {
@@ -25,6 +26,7 @@
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "aws-cdk": "2.1020.2",
+    "cdk-nag": "^2.28.195",
     "eslint": "^8.57.1",
     "eslint-plugin-jsdoc": "^48.2.0",
     "eslint-plugin-unused-imports": "^4.1.4",
