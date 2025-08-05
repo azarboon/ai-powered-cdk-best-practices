@@ -1,3 +1,7 @@
+
+# @azarboon: cdk asset bundling happens several times. try to minimize them 
+
+# @azarboon: remove outdated or unnecessary comments and codes
 #!/bin/bash
 
 # =============================================================================
@@ -99,9 +103,33 @@ echo "   Email: $NOTIFICATION_EMAIL"
 echo ""
 
 # =============================================================================
-# STEP 2: TypeScript Build
+# STEP 2: CDK Bootstrap
 # =============================================================================
-echo "🔨 Step 2: Building TypeScript Code"
+echo "🔧 Step 2: CDK Bootstrap"
+echo "========================"
+echo ""
+
+# Bootstrap CDK environment (automatically skips if already bootstrapped)
+echo "🔍 Bootstrapping CDK environment..."
+echo "   Account: ${CDK_DEFAULT_ACCOUNT:-$AWS_ACCOUNT_ID}"
+echo "   Region: ${CDK_DEFAULT_REGION:-$AWS_REGION}"
+echo ""
+
+if ! cdk bootstrap; then
+    echo "❌ ERROR: CDK bootstrap failed"
+    echo "   Check AWS credentials and permissions"
+    echo "   Ensure you have sufficient permissions to create CDK bootstrap resources"
+    exit 1
+fi
+
+echo "✅ CDK bootstrap completed"
+echo ""
+
+# @azarboon remove build as its already done automatically in cdk deploy
+# =============================================================================
+# STEP 3: TypeScript Build
+# =============================================================================
+echo "🔨 Step 3: Building TypeScript Code"
 echo "===================================="
 echo ""
 echo "ℹ️  Code quality is enforced at commit time via pre-commit hooks"
@@ -122,12 +150,13 @@ echo "✅ TypeScript compilation successful"
 echo ""
 
 # =============================================================================
-# STEP 3: CDK Template Validation
+# STEP 4: CDK Template Validation
 # =============================================================================
-echo "📋 Step 3: Validating CDK Templates"
+echo "📋 Step 4: Validating CDK Templates"
 echo "===================================="
 echo ""
 
+# @azarboon: merge step 3 and four as its duplicate
 # Run CDK synth to validate CloudFormation templates
 echo "🔍 Validating CDK templates and CloudFormation syntax..."
 if ! cdk synth > /dev/null; then
@@ -140,13 +169,14 @@ echo "✅ CDK template validation successful"
 echo ""
 
 # =============================================================================
-# STEP 4: Deployment
+# STEP 5: Deployment
 # =============================================================================
-echo "🚀 Step 4: Deploying CDK Stack"
+echo "🚀 Step 5: Deploying CDK Stack"
 echo "==============================="
 echo ""
 echo "✅ All validation checks passed:"
 echo "   ✅ Environment variables validated"
+echo "   ✅ CDK environment bootstrapped"
 echo "   ✅ TypeScript compilation successful"
 echo "   ✅ CDK template validation successful"
 echo ""
@@ -154,7 +184,7 @@ echo "Proceeding with deployment..."
 echo ""
 
 # Deploy with auto-approval (following project rules)
-if ! cdk deploy --debug --require-approval never; then
+if ! cdk deploy --require-approval never; then
     echo "❌ ERROR: CDK deployment failed"
     echo "   Check AWS credentials and permissions"
     exit 1
@@ -164,9 +194,9 @@ echo "✅ Deployment completed successfully!"
 echo ""
 
 # =============================================================================
-# STEP 5: Post-deployment Information
+# STEP 6: Post-deployment Information
 # =============================================================================
-echo "📋 Step 5: Post-deployment information..."
+echo "📋 Step 6: Post-deployment information..."
 
 # Get stack outputs
 echo "🔗 Important URLs and Information:"
@@ -176,9 +206,9 @@ echo ""
 WEBHOOK_URL=$(aws cloudformation describe-stacks \
     --stack-name GitHubMonitorStack \
     --query 'Stacks[0].Outputs[?OutputKey==`WebhookUrl`].OutputValue' \
-    --output text 2>/dev/null || echo "Unable to retrieve webhook url")
+    --output text 2>/dev/null || echo "Unable to retrieve")
 
-if [ "$WEBHOOK_URL" != "Unable to retrieve webhook url" ] && [ "$WEBHOOK_URL" != "" ]; then
+if [ "$WEBHOOK_URL" != "Unable to retrieve" ] && [ "$WEBHOOK_URL" != "" ]; then
     echo "🎯 GitHub Webhook URL:"
     echo "   $WEBHOOK_URL"
     echo ""
@@ -202,6 +232,7 @@ fi
 echo "🎉 Deployment completed successfully!"
 echo ""
 echo "📊 Deployment Summary:"
+echo "   ✅ CDK environment bootstrap: VERIFIED"
 echo "   ✅ TypeScript compilation: PASSED"
 echo "   ✅ CDK template validation: PASSED"
 echo "   ✅ AWS deployment: SUCCESSFUL"

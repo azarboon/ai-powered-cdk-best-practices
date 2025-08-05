@@ -7,6 +7,21 @@
 
 **These rules must be changed only by a human. Do not modify them automatically.**
 
+### IAM Policy Resource Rules
+
+### IAM Policy Resource Rules
+
+**All IAM policies must follow least-privilege principles and use fully qualified ARNs whenever possible.**
+
+- Prefer explicit ARNs constructed using `cdk.Aws.REGION`, `cdk.Aws.ACCOUNT_ID`, and consistent naming conventions.
+- Wildcards (e.g., `:*` or `/*`) are acceptable **only when required by the AWS service**, such as for:
+  ✅ `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:/aws/lambda/MyFunction:*`  
+  ✅ `arn:aws:s3:::my-bucket/*`  
+  ✅ `arn:aws:dynamodb:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/MyTable/index/*`
+- `"Resource": "*"` must never be used unless the action truly cannot be scoped (e.g., `logs:DescribeLogGroups`) and the permission is explicitly reviewed and approved by a human.
+- CDK resource references such as `.arn` or `.logGroupArn` are generally safe and recommended **within the same stack**. Use caution when applying them in IAM policies where the target resource may not yet exist — i.e., if the ARN needs to resolve during synthesis before the resource is defined.
+- If an unscopable action is required, isolate it in a **dedicated IAM policy statement** containing only that action. This reduces blast radius and clarifies its intent.
+
 # Specific rules for this project. Others may want to tweak them to fit their own project.
 
 AI assistants must NEVER change any of these files automatically unless they have explicit approval from a human. Approval is valid only once, and additional approval must be obtained for any future changes: .eslintrc.json, tsconfig.json, package.json, .husky\pre-commit
@@ -110,7 +125,7 @@ You must include CDK Nag in a separate script (e.g., `nag-check.ts`) to validate
 CDK Nag must not block or fail `cdk deploy`. It should be executed independently (e.g., via `npm run nag:check`) to maintain deploy flexibility while enforcing compliance.
 
 **No Automatic Suppressions**  
-You must not insert suppression rules unless explicitly instructed by a human. All suppressions must be manually reviewed and approved. Each suppression requires a distinct and explicit human approval. An approval granted for one suppression must not be reused or assumed valid for other suppressions.
+You must not insert CDK Nag suppression rules unless explicitly instructed by a human. All CDK Nag suppressions must be manually reviewed and approved. Each suppression requires a distinct and explicit human approval. An approval granted for one suppression must not be reused or assumed valid for other suppressions.
 
 **Documented Suppressions Required**  
 Each suppression requires a distinct and explicit human approval. An approval granted for one suppression must not be reused or assumed valid for other suppressions. Every suppression must include a clear comment detailing:

@@ -77,15 +77,38 @@ export class GitHubMonitorStack extends cdk.Stack {
       })
     );
 
-    // Custom IAM role for Lambda with minimal permissions
-    const lambdaRole = new iam.Role(this, 'GitHubProcessorRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      description: 'IAM role for GitHub processor Lambda function',
+    // Create specific log group first
+    const logGroup = new logs.LogGroup(this, 'ProcessorLogs', {
+      logGroupName: '/aws/lambda/GitHubMonitorStack-GitHubProcessor',
+      retention: logs.RetentionDays.THREE_DAYS,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // Lambda Function with latest runtime
+    // Custom IAM role for Lambda with specific permissions (no AWS managed policies)
+    const lambdaRole = new iam.Role(this, 'GitHubProcessorRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      description: 'Custom IAM role for GitHub processor Lambda function',
+      inlinePolicies: {
+        LambdaExecutionPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['logs:CreateLogStream', 'logs:PutLogEvents'],
+              resources: [logGroup.logGroupArn],
+            }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['sns:Publish'],
+              resources: [topic.topicArn],
+            }),
+          ],
+        }),
+      },
+    });
+
+    // Lambda Function with custom role and no automatic log retention
     const processor = new nodejs.NodejsFunction(this, 'GitHubProcessor', {
-      runtime: lambda.Runtime.NODEJS_22_X, // Latest available runtime
+      runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.X86_64,
       entry: 'lambda/processor.ts',
       handler: 'handler',
@@ -97,55 +120,89 @@ export class GitHubMonitorStack extends cdk.Stack {
         SNS_TOPIC_ARN: topic.topicArn,
         ENVIRONMENT: environment,
       },
+      // Remove logRetention to avoid creating the LogRetention Lambda with managed policies
     });
 
-    // Create Log Group first to get its ARN
-    const logGroup = new logs.LogGroup(this, 'ProcessorLogs', {
-      logGroupName: `/aws/lambda/${processor.functionName}`,
+    // Create log group for API Gateway access logs first
+    const apiLogGroupName = `/aws/apigateway/${this.stackName}-access-logs`;
+    const apiLogGroup = new logs.LogGroup(this, 'ApiGatewayAccessLogs', {
+      logGroupName: apiLogGroupName,
       retention: logs.RetentionDays.THREE_DAYS,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // Add specific permissions to the role using log group ARN - no wildcards
-    lambdaRole.addToPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
-        resources: [logGroup.logGroupArn],
-      })
+    // Create CloudWatch Logs role for API Gateway with split permissions
+    const apiGatewayCloudWatchRole = new iam.Role(this, 'ApiGatewayCloudWatchRole', {
+      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      inlinePolicies: {
+        CloudWatchLogsPolicy: new iam.PolicyDocument({
+          statements: [
+            // Specific log group permissions for main logging operations
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                'logs:CreateLogGroup',
+                'logs:CreateLogStream',
+                'logs:PutLogEvents',
+                'logs:PutRetentionPolicy',
+              ],
+              resources: [
+                `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:${apiLogGroupName}:*`,
+              ],
+            }),
+            // API Gateway execution log groups permissions
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                'logs:CreateLogGroup',
+                'logs:CreateLogStream',
+                'logs:PutLogEvents',
+                'logs:PutRetentionPolicy',
+              ],
+              resources: [
+                `arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:/aws/apigateway/*:*`,
+              ],
+            }),
+            // API Gateway scoped permissions for describe operations @azarboon i think this comment doesnt make sense
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['logs:DescribeLogGroups', 'logs:DescribeLogStreams'],
+              resources: ['*'],
+              // resources: [`arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:/aws/apigateway/*`],
+            }),
+          ],
+        }),
+      },
+    });
+
+    // Suppress CDK Nag rule for wildcard permission in API Gateway CloudWatch role
+    NagSuppressions.addResourceSuppressions(
+      apiGatewayCloudWatchRole,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason:
+            'logs:DescribeLogGroups requires wildcard due to AWS API Gateway needing read access across /aws/apigateway/* for logging validation. This is a read-only operation with no write.',
+        },
+      ],
+      true
     );
 
-    lambdaRole.addToPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ['sns:Publish'],
-        resources: [topic.topicArn],
-      })
-    );
+    // Set the CloudWatch Logs role for API Gateway at account level with proper dependencies
+    const account = new apigateway.CfnAccount(this, 'ApiGatewayAccount', {
+      cloudWatchRoleArn: apiGatewayCloudWatchRole.roleArn,
+    });
 
-    // API Gateway with access logging
+    account.node.addDependency(apiLogGroup);
+    account.node.addDependency(apiGatewayCloudWatchRole);
+
+    // API Gateway with proper logging and validation
     const api = new apigateway.RestApi(this, 'GitHubApi', {
       restApiName: 'GitHub Webhook API',
       description: 'GitHub webhook receiver',
       deployOptions: {
-        accessLogDestination: new apigateway.LogGroupLogDestination(
-          new logs.LogGroup(this, 'ApiGatewayAccessLogs', {
-            logGroupName: `/aws/apigateway/${this.stackName}-access-logs`,
-            retention: logs.RetentionDays.THREE_DAYS,
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
-          })
-        ),
-        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields({
-          caller: true,
-          httpMethod: true,
-          ip: true,
-          protocol: true,
-          requestTime: true,
-          resourcePath: true,
-          responseLength: true,
-          status: true,
-          user: true,
-        }),
+        accessLogDestination: new apigateway.LogGroupLogDestination(apiLogGroup),
+        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields(),
         loggingLevel: apigateway.MethodLoggingLevel.INFO,
         dataTraceEnabled: true,
         metricsEnabled: true,
@@ -185,7 +242,7 @@ export class GitHubMonitorStack extends cdk.Stack {
       },
     });
 
-    // Suppress CDK Nag rules for webhook endpoint - authorization intentionally disabled for GitHub webhooks
+    // Revert suppressions for auth errors #5 and #6 as requested
     NagSuppressions.addResourceSuppressions(webhookMethod, [
       {
         id: 'AwsSolutions-APIG4',

@@ -10,6 +10,7 @@
     "build:check": "tsc --noEmit",
     "deploy": "cdk deploy",
     "synth": "cdk synth",
+    "bootstrap": "cdk bootstrap",
     "destroy": "cdk destroy",
     "lint:check": "eslint . --ext .ts --max-warnings 0 --cache",
     "lint:fix": "eslint . --ext .ts --fix --cache",

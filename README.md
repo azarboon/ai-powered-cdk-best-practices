@@ -5,17 +5,20 @@
 
 # AI-Powered Serverless Boilerplate with AWS CDK and TypeScript Following Best Practices
 
-This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to demonstrate best practices such as automated code quality checks, automated security checks, automated documentation updates.
+This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to leverage AI-powered tools for development (e.g., agentic coders and Model Context Protocol - MCPs) and to demonstrate best practices such as automated code quality checks, security validations, tests, and more.
 
-The app is developed using Amazon Q CLI Developer. While Amazon Q CLI can be very powerful, it can also behave unpredictably. This project focuses on harnessing its capabilities effectively. To achieve this, special attention is given to the development context—specifically, the rules that the AI assistant must follow, which are detailed in `.amazonq\rules\PROJECT_RULES.md`. These rules are designed to guide Amazon Q CLI usage but can also be applied with other AI assistants or in other projects. The goal is to create a boilerplate that makes working with Amazon Q CLI easier while enforcing code best practices.
+The app is developed using Amazon Q CLI Developer, but other agentic coders can be used as well. While Amazon Q CLI can be highly capable, it may also behave unpredictably. This project focuses on harnessing its capabilities effectively. To support this, special attention is given to the development context—specifically, the rules the AI assistant must follow, which are defined in `.amazonq\rules\PROJECT_RULES.md`. These rules are designed to guide Amazon Q CLI usage but can also be applied to other AI assistants or projects. The goal is to create a boilerplate that simplifies working with Amazon Q CLI while enforcing solid development practices.
 
 ## Warning
 
-Given the unpredictable behavior of Amazon Q CLI, there have been instances where unintended changes were committed. I address and correct these issues as they arise.
+Due to the unpredictable behavior of Amazon Q CLI, there have been instances of unintended commits or bloated logic. I continuously address and correct these issues as they arise. Contributions and pull requests are welcome.
 
 ## TODO
 
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
+<!-- address wherver there is @azarboon in the code -->
+
+<!-- in cdk.json file, app section: use precompiled JS (node lib/app.js) instead of ts-node for faster, reliable CDK deploys with explicit tsc control. -->
 
 ## Project rules
 
@@ -111,9 +114,13 @@ This script will:
 
 **Alternative manual deployment:**
 
-First, update the environment variables in the `.env` file. Then run the following command, which ensures the variables are loaded into the environment before executing `npm run deploy` to deploy the stack.
+First, update the environment variables in the `.env` file. Then run the following commands:
 
 ```bash
+
+npm run bootstrap
+
+#  The following ensures the variables are loaded into the environment before executing `npm run deploy` to deploy the stack
 export $(cat .env | grep -v '^#' | grep -v '^$' | xargs) && npm run deploy
 ```
 
