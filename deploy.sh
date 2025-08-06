@@ -124,77 +124,48 @@ fi
 
 echo "✅ CDK bootstrap completed"
 echo ""
-
-# @azarboon remove build as its already done automatically in cdk deploy
 # =============================================================================
-# STEP 3: TypeScript Build
+# STEP 3: Build + CDK Synth
 # =============================================================================
-echo "🔨 Step 3: Building TypeScript Code"
-echo "===================================="
-echo ""
-echo "ℹ️  Code quality is enforced at commit time via pre-commit hooks"
-echo "   - ESLint validation runs before every commit"
-echo "   - Deployment focuses on build and template validation"
+echo "🔨 Step 3: Building and Synthesizing Once"
+echo "=========================================="
 echo ""
 
-# Build TypeScript code
+# Compile TypeScript
 echo "🔧 Compiling TypeScript files..."
 if ! npm run build; then
     echo "❌ ERROR: TypeScript compilation failed"
-    echo "   Check the output above for compilation errors"
-    echo "   Fix TypeScript errors and re-run deployment"
     exit 1
 fi
-
 echo "✅ TypeScript compilation successful"
-echo ""
 
-# =============================================================================
-# STEP 4: CDK Template Validation
-# =============================================================================
-echo "📋 Step 4: Validating CDK Templates"
-echo "===================================="
-echo ""
-
-# @azarboon: merge step 3 and four as its duplicate
-# Run CDK synth to validate CloudFormation templates
-echo "🔍 Validating CDK templates and CloudFormation syntax..."
-if ! cdk synth > /dev/null; then
+# Run CDK synth (generates templates and triggers bundling once)
+echo "🔍 Synthesizing CDK app..."
+if ! npm run synth:out; then
     echo "❌ ERROR: CDK synthesis failed"
-    echo "   Check CDK code and template syntax"
     exit 1
 fi
-
-echo "✅ CDK template validation successful"
+echo "✅ CDK synthesis successful"
 echo ""
 
 # =============================================================================
-# STEP 5: Deployment
+# STEP 4: Deployment (No Additional Bundling)
 # =============================================================================
-echo "🚀 Step 5: Deploying CDK Stack"
-echo "==============================="
-echo ""
-echo "✅ All validation checks passed:"
-echo "   ✅ Environment variables validated"
-echo "   ✅ CDK environment bootstrapped"
-echo "   ✅ TypeScript compilation successful"
-echo "   ✅ CDK template validation successful"
-echo ""
-echo "Proceeding with deployment..."
+echo "🚀 Step 4: Deploying from Synthesized Output"
+echo "============================================"
 echo ""
 
-# Deploy with auto-approval (following project rules)
-if ! cdk deploy --require-approval never; then
+if ! cdk deploy --app cdk.out --require-approval never; then
     echo "❌ ERROR: CDK deployment failed"
-    echo "   Check AWS credentials and permissions"
     exit 1
 fi
 
-echo "✅ Deployment completed successfully!"
+echo "✅ Deployment completed successfully"
 echo ""
 
+
 # =============================================================================
-# STEP 6: Post-deployment Information
+# STEP 5: Post-deployment Information
 # =============================================================================
 echo "📋 Step 6: Post-deployment information..."
 
