@@ -1,20 +1,16 @@
-
-# @azarboon: cdk asset bundling happens several times. try to minimize them 
-
 # @azarboon: remove outdated or unnecessary comments and codes
+
+
 #!/bin/bash
+# Exit immediately on errors, undefined variables, or failed pipelines
+# Improves script safety and prevents silent failures
+set -euo pipefail
 
 # =============================================================================
 # GitHub Monitor CDK Application - Deployment Script
 # =============================================================================
 # 
 # Purpose: Automated deployment with build validation
-# 
-# NOTE: ESLint validation is enforced ONLY at commit time via pre-commit hooks
-# - Deployment focuses on build and CDK template validation
-# - Code quality is ensured before commits, not before deployments
-# - This allows faster deployment cycles while maintaining code quality
-#
 # This script:
 # 1. Validates environment variables
 # 2. Builds TypeScript code
@@ -24,19 +20,11 @@
 #
 # Usage: ./deploy.sh
 # Prerequisites: Environment variables must be set (see .env.template)
-#
+# NOTE: ESLint validation is enforced ONLY at commit time via pre-commit hooks
 # =============================================================================
-
-set -e  # Exit on any error
 
 echo "🚀 GitHub Monitor CDK Deployment Script"
 echo "========================================"
-echo ""
-echo "ℹ️  Code Quality: ESLint validation enforced at commit time only"
-echo "   - Pre-commit hooks ensure code quality before commits"
-echo "   - Deployment focuses on build and template validation"
-echo "   - Faster deployment cycles with maintained code quality"
-echo ""
 
 # =============================================================================
 # STEP 0: Load Environment Variables
@@ -63,6 +51,7 @@ REQUIRED_VARS=(
     "CDK_DEFAULT_ACCOUNT"
     "GITHUB_REPOSITORY" 
     "NOTIFICATION_EMAIL"
+    "CDK_STACK_NAME"
 )
 
 MISSING_VARS=()
@@ -73,12 +62,12 @@ for var in "${REQUIRED_VARS[@]}"; do
     fi
 done
 
-# Check alternative AWS variables if CDK_DEFAULT_* not set
-if [ -z "$CDK_DEFAULT_ACCOUNT" ] && [ -z "$AWS_ACCOUNT_ID" ]; then
-    MISSING_VARS+=("CDK_DEFAULT_ACCOUNT or AWS_ACCOUNT_ID")
+# Check CDK environment variables
+if [ -z "$CDK_DEFAULT_ACCOUNT" ]; then
+    MISSING_VARS+=("CDK_DEFAULT_ACCOUNT")
 fi
 
-if [ -z "$CDK_DEFAULT_REGION" ] && [ -z "$AWS_REGION" ]; then
+if [ -z "$CDK_DEFAULT_REGION" ]; then
     echo "⚠️  Warning: No region specified, defaulting to us-east-1"
     export CDK_DEFAULT_REGION=us-east-1
 fi
@@ -96,34 +85,36 @@ if [ ${#MISSING_VARS[@]} -ne 0 ]; then
 fi
 
 echo "✅ Environment variables validated"
-echo "   Account: ${CDK_DEFAULT_ACCOUNT:-$AWS_ACCOUNT_ID}"
-echo "   Region: ${CDK_DEFAULT_REGION:-$AWS_REGION}"
+echo "   Account: $CDK_DEFAULT_ACCOUNT"
+echo "   Region: $CDK_DEFAULT_REGION"
 echo "   Repository: $GITHUB_REPOSITORY"
 echo "   Email: $NOTIFICATION_EMAIL"
+echo "   CDK Stack name: $CDK_STACK_NAME"
 echo ""
 
 # =============================================================================
 # STEP 2: CDK Bootstrap
 # =============================================================================
-echo "🔧 Step 2: CDK Bootstrap"
+
+# Bootstrap CDK environment only if not already bootstrapped
+echo "🔧 Step 2: CDK Bootstrapping"
 echo "========================"
 echo ""
 
-# Bootstrap CDK environment (automatically skips if already bootstrapped)
-echo "🔍 Bootstrapping CDK environment..."
-echo "   Account: ${CDK_DEFAULT_ACCOUNT:-$AWS_ACCOUNT_ID}"
-echo "   Region: ${CDK_DEFAULT_REGION:-$AWS_REGION}"
-echo ""
-
-if ! cdk bootstrap; then
-    echo "❌ ERROR: CDK bootstrap failed"
-    echo "   Check AWS credentials and permissions"
-    echo "   Ensure you have sufficient permissions to create CDK bootstrap resources"
-    exit 1
+if ! aws cloudformation describe-stacks --stack-name CDKToolkit >/dev/null 2>&1; then
+    echo "🔍 Bootstrapping CDK environment..."
+    if ! cdk bootstrap; then
+        echo "❌ ERROR: CDK bootstrap failed"
+        echo "   Check AWS credentials and permissions"
+        exit 1
+    fi
+    echo "✅ CDK bootstrap completed"
+else
+    echo "✅ CDK environment already bootstrapped, skipping..."
 fi
 
-echo "✅ CDK bootstrap completed"
 echo ""
+
 # =============================================================================
 # STEP 3: Build + CDK Synth
 # =============================================================================
@@ -132,6 +123,7 @@ echo "=========================================="
 echo ""
 
 # Compile TypeScript
+# @azarboon check if this compile part can comehow be optimized.
 echo "🔧 Compiling TypeScript files..."
 if ! npm run build; then
     echo "❌ ERROR: TypeScript compilation failed"
@@ -149,9 +141,9 @@ echo "✅ CDK synthesis successful"
 echo ""
 
 # =============================================================================
-# STEP 4: Deployment (No Additional Bundling)
+# STEP 4: Deployment
 # =============================================================================
-echo "🚀 Step 4: Deploying from Synthesized Output"
+echo "🚀 Step 4: Deploying"
 echo "============================================"
 echo ""
 
@@ -169,13 +161,9 @@ echo ""
 # =============================================================================
 echo "📋 Step 6: Post-deployment information..."
 
-# Get stack outputs
-echo "🔗 Important URLs and Information:"
-echo ""
-
 # Extract webhook URL from CDK outputs
 WEBHOOK_URL=$(aws cloudformation describe-stacks \
-    --stack-name GitHubMonitorStack \
+    --stack-name $CDK_STACK_NAME \
     --query 'Stacks[0].Outputs[?OutputKey==`WebhookUrl`].OutputValue' \
     --output text 2>/dev/null || echo "Unable to retrieve")
 
@@ -202,18 +190,8 @@ fi
 
 echo "🎉 Deployment completed successfully!"
 echo ""
-echo "📊 Deployment Summary:"
-echo "   ✅ CDK environment bootstrap: VERIFIED"
-echo "   ✅ TypeScript compilation: PASSED"
-echo "   ✅ CDK template validation: PASSED"
-echo "   ✅ AWS deployment: SUCCESSFUL"
-echo ""
 echo "🔍 Monitoring:"
 echo "   Monitor CloudWatch logs for webhook activity"
-echo "   Test by making a commit to $GITHUB_REPOSITORY"
-echo ""
-echo "💡 Code Quality:"
-echo "   ESLint validation enforced at commit time via pre-commit hooks"
-echo "   Use 'npm run lint' to check code quality anytime"
-echo "   Use 'npm run lint:fix' to auto-fix issues"
+echo "   Confirm your SNS subscription in the $NOTIFICATION_EMAIL then test by making a commit to $GITHUB_REPOSITORY"
+echo "   You will get a new email upon any new commit that shows code change"
 echo ""
