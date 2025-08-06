@@ -32,12 +32,14 @@ echo "========================================"
 echo "📋 Step 0: Loading environment variables from .env file..."
 
 if [ -f ".env" ]; then
-    echo "✅ Found .env file, loading variables..."
-    # Export variables from .env file (skip comments and empty lines)
-    export $(grep -v '^#' .env | grep -v '^$' | xargs)
-    echo "✅ Environment variables loaded from .env"
+    echo "✅ Found .env file"
+    # Load environment variables from .env file
+    set -a  # Automatically export all variables
+    source .env
+    set +a  # Disable automatic export
+    echo "✅ Environment variables loaded from .env file"
 else
-    echo "⚠️  Warning: .env file not found, using existing environment variables"
+    echo "⚠️  Warning: .env file not found — deployment may fail if required environment variables are missing"
 fi
 echo ""
 
@@ -57,17 +59,12 @@ REQUIRED_VARS=(
 MISSING_VARS=()
 
 for var in "${REQUIRED_VARS[@]}"; do
-    if [ -z "${!var}" ]; then
+    if [ -z "${!var:-}" ]; then
         MISSING_VARS+=("$var")
     fi
 done
 
-# Check CDK environment variables
-if [ -z "$CDK_DEFAULT_ACCOUNT" ]; then
-    MISSING_VARS+=("CDK_DEFAULT_ACCOUNT")
-fi
-
-if [ -z "$CDK_DEFAULT_REGION" ]; then
+if [ -z "${CDK_DEFAULT_REGION:-}" ]; then
     echo "⚠️  Warning: No region specified, defaulting to us-east-1"
     export CDK_DEFAULT_REGION=us-east-1
 fi
@@ -78,26 +75,41 @@ if [ ${#MISSING_VARS[@]} -ne 0 ]; then
     echo ""
     echo "💡 Solution: Set environment variables or update .env file:"
     echo "   # Edit .env with your values"
-    echo "   nano .env"
-    echo "   source .env"
-    echo "   ./deploy.sh"
     exit 1
 fi
 
 echo "✅ Environment variables validated"
-echo "   Account: $CDK_DEFAULT_ACCOUNT"
-echo "   Region: $CDK_DEFAULT_REGION"
-echo "   Repository: $GITHUB_REPOSITORY"
-echo "   Email: $NOTIFICATION_EMAIL"
-echo "   CDK Stack name: $CDK_STACK_NAME"
+echo "   Account: ${CDK_DEFAULT_ACCOUNT:-}"
+echo "   Region: ${CDK_DEFAULT_REGION:-}"
+echo "   Repository: ${GITHUB_REPOSITORY:-}"
+echo "   Email: ${NOTIFICATION_EMAIL:-}"
+echo "   CDK Stack name: ${CDK_STACK_NAME:-}"
 echo ""
 
 # =============================================================================
-# STEP 2: CDK Bootstrap
+# STEP 2: Dependency Check
+# =============================================================================
+echo "📦 Step 2: Checking dependencies..."
+
+# Check if node_modules exists and package-lock.json is newer than package.json
+if [ ! -d "node_modules" ] || [ "package.json" -nt "package-lock.json" ] || [ ! -f "package-lock.json" ]; then
+    echo "🔍 Installing/updating dependencies..."
+    if ! npm install; then
+        echo "❌ ERROR: npm install failed"
+        exit 1
+    fi
+    echo "✅ Dependencies installed successfully"
+else
+    echo "✅ Dependencies are up-to-date, skipping npm install"
+fi
+echo ""
+
+# =============================================================================
+# STEP 3: CDK Bootstrap
 # =============================================================================
 
 # Bootstrap CDK environment only if not already bootstrapped
-echo "🔧 Step 2: CDK Bootstrapping"
+echo "🔧 Step 3: CDK Bootstrapping"
 echo "========================"
 echo ""
 
@@ -116,9 +128,9 @@ fi
 echo ""
 
 # =============================================================================
-# STEP 3: Build + CDK Synth
+# STEP 4: Build + CDK Synth
 # =============================================================================
-echo "🔨 Step 3: Building and Synthesizing Once"
+echo "🔨 Step 4: Building and Synthesizing Once"
 echo "=========================================="
 echo ""
 
@@ -141,9 +153,9 @@ echo "✅ CDK synthesis successful"
 echo ""
 
 # =============================================================================
-# STEP 4: Deployment
+# STEP 5: Deployment
 # =============================================================================
-echo "🚀 Step 4: Deploying"
+echo "🚀 Step 5: Deploying"
 echo "============================================"
 echo ""
 
@@ -157,13 +169,13 @@ echo ""
 
 
 # =============================================================================
-# STEP 5: Post-deployment Information
+# STEP 6: Post-deployment Information
 # =============================================================================
 echo "📋 Step 6: Post-deployment information..."
 
 # Extract webhook URL from CDK outputs
 WEBHOOK_URL=$(aws cloudformation describe-stacks \
-    --stack-name $CDK_STACK_NAME \
+    --stack-name ${CDK_STACK_NAME:-} \
     --query 'Stacks[0].Outputs[?OutputKey==`WebhookUrl`].OutputValue' \
     --output text 2>/dev/null || echo "Unable to retrieve")
 
@@ -172,14 +184,14 @@ if [ "$WEBHOOK_URL" != "Unable to retrieve" ] && [ "$WEBHOOK_URL" != "" ]; then
     echo "   $WEBHOOK_URL"
     echo ""
     echo "📝 Next Steps:"
-    echo "   1. Go to: https://github.com/$GITHUB_REPOSITORY/settings/hooks"
+    echo "   1. Go to: https://github.com/${GITHUB_REPOSITORY:-}/settings/hooks"
     echo "   2. Add webhook with URL: $WEBHOOK_URL"
     echo "   3. Set Content type: application/json"
     echo "   4. Select 'Just the push event'"
     echo "   5. Ensure webhook is Active"
     echo ""
     echo "📧 Email Confirmation:"
-    echo "   Check $NOTIFICATION_EMAIL for SNS subscription confirmation"
+    echo "   Check ${NOTIFICATION_EMAIL:-} for SNS subscription confirmation"
     echo "   Click the confirmation link to receive notifications"
     echo ""
 else
@@ -192,6 +204,6 @@ echo "🎉 Deployment completed successfully!"
 echo ""
 echo "🔍 Monitoring:"
 echo "   Monitor CloudWatch logs for webhook activity"
-echo "   Confirm your SNS subscription in the $NOTIFICATION_EMAIL then test by making a commit to $GITHUB_REPOSITORY"
+echo "   Confirm your SNS subscription in the ${NOTIFICATION_EMAIL:-} then test by making a commit to ${GITHUB_REPOSITORY:-}"
 echo "   You will get a new email upon any new commit that shows code change"
 echo ""

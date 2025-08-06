@@ -105,23 +105,24 @@ nano .env
 
 This script will:
 
-- Automatically load environment variables from `.env`
-- Validate environment variables
-- Build TypeScript code
-- Validate CDK templates
-- Deploy the stack
-- Display webhook URL for GitHub configuration
+- Automatically loads environment variables from `.env` file and validates them
+- Installs or updates dependencies if necessary
+- Bootstraps the CDK environment if needed
+- Builds TypeScript code
+- Validates the CDK template
+- Deploys the stack
+
 
 **Alternative manual deployment:**
 
 First, update the environment variables in the `.env` file. Then run the following commands:
 
 ```bash
+npm run install
 
 npm run bootstrap
 
-#  The following ensures the variables are loaded into the environment before executing `npm run deploy` to deploy the stack
-export $(cat .env | grep -v '^#' | grep -v '^$' | xargs) && npm run deploy
+npm run deploy
 ```
 
 ## 📧 Configure Webhook and confirm Email Subscription
