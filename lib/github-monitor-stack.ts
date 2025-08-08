@@ -1,10 +1,3 @@
-/**
- * GitHub Monitor Stack.
- *
- * Architecture: API Gateway → Lambda → SNS
- * Replaces: 8 services with 3 services
- */
-
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -22,6 +15,7 @@ export class GitHubMonitorStack extends cdk.Stack {
     const githubRepository = process.env.GITHUB_REPOSITORY!;
     const notificationEmail = process.env.NOTIFICATION_EMAIL!;
     const environment = process.env.ENVIRONMENT || 'dev';
+    const stackName = this.stackName;
 
     // Validate required env vars exists
     if (!githubRepository || !githubRepository.includes('/')) {
@@ -34,8 +28,8 @@ export class GitHubMonitorStack extends cdk.Stack {
 
     // SNS Topic with SSL enforcement
     const topic = new sns.Topic(this, 'GitHubTopic', {
-      topicName: 'github-notifications',
-      displayName: 'GitHub Push Notifications',
+      topicName: `${stackName}-sns-topic`,
+      displayName: `${stackName} Push Notifications`,
     });
 
     /*
@@ -57,7 +51,7 @@ export class GitHubMonitorStack extends cdk.Stack {
       topics: [topic],
     }).document.addStatements(
       new iam.PolicyStatement({
-        sid: 'DenyInsecureTransport',
+        sid: `${stackName}DenyInsecureTransport`,
         effect: iam.Effect.DENY,
         actions: ['SNS:Publish'],
         principals: [new iam.AnyPrincipal()],
@@ -79,7 +73,7 @@ export class GitHubMonitorStack extends cdk.Stack {
 
     // Create specific log group first
     const logGroup = new logs.LogGroup(this, 'ProcessorLogs', {
-      logGroupName: '/aws/lambda/GitHubMonitorStack-GitHubProcessor',
+      logGroupName: `/aws/lambda/${stackName}-github-processor`,
       retention: logs.RetentionDays.THREE_DAYS,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
@@ -87,9 +81,9 @@ export class GitHubMonitorStack extends cdk.Stack {
     // Custom IAM role for Lambda with specific permissions (no AWS managed policies)
     const lambdaRole = new iam.Role(this, 'GitHubProcessorRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      description: 'Custom IAM role for GitHub processor Lambda function',
+      description: `Custom IAM role for ${stackName} Lambda function`,
       inlinePolicies: {
-        LambdaExecutionPolicy: new iam.PolicyDocument({
+        [`${stackName}LambdaExecutionPolicy`]: new iam.PolicyDocument({
           statements: [
             new iam.PolicyStatement({
               effect: iam.Effect.ALLOW,
@@ -123,6 +117,12 @@ export class GitHubMonitorStack extends cdk.Stack {
       // Remove logRetention to avoid creating the LogRetention Lambda with managed policies
     });
 
+    // Update IAM role description to reference actual Lambda function name
+    lambdaRole.node.addMetadata(
+      'description',
+      `Custom IAM role for ${processor.functionName} Lambda function`
+    );
+
     // Create log group for API Gateway access logs first
     const apiLogGroupName = `/aws/apigateway/${this.stackName}-access-logs`;
     const apiLogGroup = new logs.LogGroup(this, 'ApiGatewayAccessLogs', {
@@ -135,7 +135,7 @@ export class GitHubMonitorStack extends cdk.Stack {
     const apiGatewayCloudWatchRole = new iam.Role(this, 'ApiGatewayCloudWatchRole', {
       assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
       inlinePolicies: {
-        CloudWatchLogsPolicy: new iam.PolicyDocument({
+        [`${stackName}CloudWatchLogsPolicy`]: new iam.PolicyDocument({
           statements: [
             // Specific log group permissions for main logging operations
             new iam.PolicyStatement({
@@ -168,7 +168,6 @@ export class GitHubMonitorStack extends cdk.Stack {
               effect: iam.Effect.ALLOW,
               actions: ['logs:DescribeLogGroups', 'logs:DescribeLogStreams'],
               resources: ['*'],
-              // resources: [`arn:aws:logs:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:log-group:/aws/apigateway/*`],
             }),
           ],
         }),
@@ -197,9 +196,9 @@ export class GitHubMonitorStack extends cdk.Stack {
     account.node.addDependency(apiGatewayCloudWatchRole);
 
     // API Gateway with proper logging and validation
-    const api = new apigateway.RestApi(this, 'GitHubApi', {
-      restApiName: 'GitHub Webhook API',
-      description: 'GitHub webhook receiver',
+    const api = new apigateway.RestApi(this, 'WebhookApi', {
+      restApiName: `${stackName}-api`,
+      description: `${stackName} webhook receiver`,
       deployOptions: {
         accessLogDestination: new apigateway.LogGroupLogDestination(apiLogGroup),
         accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields(),
@@ -209,18 +208,21 @@ export class GitHubMonitorStack extends cdk.Stack {
       },
       defaultMethodOptions: {
         requestValidatorOptions: {
-          requestValidatorName: 'webhook-validator',
+          requestValidatorName: `${stackName}-request-validator`,
           validateRequestBody: true,
           validateRequestParameters: true,
         },
       },
     });
 
+    // Suppress the automatic endpoint output to avoid confusion for the users
+    api.node.tryRemoveChild('Endpoint');
+
     const webhook = api.root.addResource('webhook');
     const webhookMethod = webhook.addMethod('POST', new apigateway.LambdaIntegration(processor), {
       requestValidator: new apigateway.RequestValidator(this, 'WebhookValidator', {
         restApi: api,
-        requestValidatorName: 'webhook-request-validator',
+        requestValidatorName: `${stackName}-request-validator`,
         validateRequestBody: true,
         validateRequestParameters: true,
       }),
@@ -228,7 +230,7 @@ export class GitHubMonitorStack extends cdk.Stack {
         'application/json': new apigateway.Model(this, 'WebhookModel', {
           restApi: api,
           contentType: 'application/json',
-          modelName: 'WebhookPayload',
+          modelName: `${stackName}WebhookPayload`,
           schema: {
             type: apigateway.JsonSchemaType.OBJECT,
             properties: {
@@ -257,7 +259,7 @@ export class GitHubMonitorStack extends cdk.Stack {
     ]);
 
     // Tags
-    const tags = { Environment: environment, Project: 'GitHubMonitor' };
+    const tags = { Environment: environment, Project: stackName };
     Object.entries(tags).forEach(([key, value]) => {
       cdk.Tags.of(this).add(key, value);
     });
@@ -265,12 +267,12 @@ export class GitHubMonitorStack extends cdk.Stack {
     // Outputs
     new cdk.CfnOutput(this, 'WebhookUrl', {
       value: `${api.url}webhook`,
-      description: 'GitHub Webhook URL',
+      description: `${stackName} Webhook URL`,
     });
 
     new cdk.CfnOutput(this, 'TopicArn', {
       value: topic.topicArn,
-      description: 'SNS Topic ARN',
+      description: `${stackName} SNS Topic ARN`,
     });
   }
 }

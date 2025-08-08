@@ -12,12 +12,19 @@ import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 import { AwsSolutionsChecks } from 'cdk-nag';
 
 const app = new App();
-new GitHubMonitorStack(app, 'GitHubMonitorStack', {
+
+// Require CDK_STACK_NAME environment variable
+const stackName = process.env.CDK_STACK_NAME;
+if (!stackName) {
+  throw new Error('CDK_STACK_NAME environment variable is required');
+}
+
+new GitHubMonitorStack(app, stackName, {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
   },
 });
 
-// Simple rule informational messages using the AWS Solutions Rule pack
-Aspects.of(app).add(new AwsSolutionsChecks());
+console.log('🔍 Running CDK Nag against AWS Solutions rules...');
+Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));

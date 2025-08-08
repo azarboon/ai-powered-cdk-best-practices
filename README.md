@@ -153,11 +153,13 @@ cdk destroy
 
 All configuration is managed through environment variables (no hardcoded values)
 
+@azarboon: go through each one by one and validate the diagram and components
+
 ## 📊 Architecture Diagram
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   GitHub Repo   │───▶│   API Gateway    │───▶│ GitHub Processor│
+│   GitHub Repo   │───▶│API Gateway      │───▶│ GitHub Processor│
 │ (Push Webhook)  │    │ • REST Endpoint  │    │     Lambda      │
 │                 │    │ • Request Valid. │    │ • Event Filter  │
 └─────────────────┘    │ • CloudWatch Logs│    │ • GitHub API    │
@@ -193,6 +195,15 @@ All configuration is managed through environment variables (no hardcoded values)
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### **Data Flow:**
+
+1. **GitHub Push Event** → Webhook triggers API Gateway `/webhook` endpoint
+2. **API Gateway** → Validates JSON payload against schema, logs to CloudWatch, forwards to Lambda
+3. **Lambda Function** → Filters push events, validates repository, processes up to 3 commits
+4. **GitHub API Calls** → Lambda makes HTTPS requests to fetch commit details and file diffs
+5. **SNS Publishing** → Lambda formats email content and publishes to SNS topic
+6. **Email Delivery** → SNS delivers formatted commit notifications to email subscriber
+
 ### **Complete Component List:**
 
 **Core Services (3):**
@@ -203,24 +214,15 @@ All configuration is managed through environment variables (no hardcoded values)
 
 **Supporting Resources (9):**
 
-- CloudWatch Log Group (Lambda): `/aws/lambda/GitHubMonitorStack-GitHubProcessor` (3-day retention)
+- CloudWatch Log Group (Lambda): `/aws/lambda/{StackName}-github-processor` (3-day retention)
 - CloudWatch Log Group (API Gateway): `/aws/apigateway/{StackName}-access-logs` (3-day retention)
 - IAM Role (Lambda): Custom execution role with inline policies for CloudWatch + SNS
 - IAM Role (API Gateway): Custom CloudWatch logging role with scoped permissions
-- Request Validator: `webhook-request-validator` with body/parameter validation
-- JSON Schema Model: `WebhookPayload` model for webhook request validation
+- Request Validator: `{StackName}-request-validator` with body/parameter validation
+- JSON Schema Model: `{StackName}WebhookPayload` model for webhook request validation
 - SNS Topic Policy: Dedicated policy enforcing SSL/TLS transport security
 - Email Subscription: Direct email delivery from SNS topic (non-JSON format)
 - API Gateway Account: CfnAccount resource for CloudWatch logging integration
-
-### **Data Flow:**
-
-1. **GitHub Push Event** → Webhook triggers API Gateway `/webhook` endpoint
-2. **API Gateway** → Validates JSON payload against schema, logs to CloudWatch, forwards to Lambda
-3. **Lambda Function** → Filters push events, validates repository, processes up to 3 commits
-4. **GitHub API Calls** → Lambda makes HTTPS requests to fetch commit details and file diffs
-5. **SNS Publishing** → Lambda formats email content and publishes to SNS topic
-6. **Email Delivery** → SNS delivers formatted commit notifications to email subscriber
 
 ## 🔒 Security Features
 
@@ -238,6 +240,7 @@ All configuration is managed through environment variables (no hardcoded values)
 ## 💰 FinOps practices
 
 - **Log Retention**: 1-week retention to control storage costs
+  @azarboon: validate the followings
 - **Resource Tagging**: All resources tagged for cost tracking
 
 ## 🗂️ Project Structure
@@ -290,7 +293,7 @@ You can verify the added rules by running:
 
 ## 🔌 Model Context Protocol (MCP) Integration
 
-> NOTE: The local MCP servers are currently unstable and prone to bugs. Even AWS, via their MCP GitHub repository, advises against using them in production environments. Their behavior is inconsistent—sometimes they function correctly, other times they do not. This section has been created for personal reference, and may be modified or removed in the future.
+> NOTE: The local MCP servers are currently unstable and prone to bugs especially in WSL2 environment while using Windows 11. Even AWS, via their MCP GitHub repository, advises against using their MCPs in production environments. Their behavior is inconsistent—sometimes they function correctly, other times they do not. This section has been created for personal reference, and may be modified or removed in the future.
 
 The MCP server configuration is located in `.amazonq/mcp.json`. This project supports both remote and local MCP server configurations:
 
@@ -342,4 +345,4 @@ Start Amazon Q CLI in a third terminal:
 
 `q chat > "test integration with all configured mcp servers"`
 
-**Note:** At the time of writing, local MCP servers—particularly the AWS API MCP Server—may show unstable behavior. To confirm MCP server usage, explicitly ask Amazon Q within the session to verify MCP integration status.
+**Note:** At the time of writing, local MCP servers—particularly the AWS API MCP Server—may show unstable behavior in WSL2 environment. To confirm MCP server usage, explicitly ask Amazon Q within the session to verify MCP integration status.
