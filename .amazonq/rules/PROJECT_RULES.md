@@ -39,6 +39,10 @@ These rules are aligned with AWS CDK official best practices and MUST be strictl
 
 ---
 
+## Naming Convention Rule – Dynamic Component Names
+
+Never hardcode component names in infrastructure code; instead, dynamically generate them by combining the stack name with a relevant suffix (e.g., {stackName}-topic for an SNS topic, {stackName}-processor for a Lambda function, or {stackName}-api for an API Gateway). This ensures consistent naming across environments, avoids resource name collisions, and supports maintainable, scalable deployments.
+
 ## Single Responsibility Constructs and Stacks
 
 **Each Construct or Stack MUST perform exactly one clearly defined function.**  

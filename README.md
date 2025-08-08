@@ -16,6 +16,10 @@ Due to the unpredictable behavior of Amazon Q CLI, there have been instances of 
 ## TODO
 
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
+
+create an event for integration test
+validate the data flow and write units
+
 <!-- address wherver there is @azarboon in the code -->
 
 <!-- ask chatgpt how to optimize ts compliation process both in ts settings, package.json as well as deploy.sh........in cdk.json file, app section: use precompiled JS (node lib/app.js) instead of ts-node for faster, reliable CDK deploys with explicit tsc control. -->
@@ -80,10 +84,6 @@ export PATH="$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 export PATH=$(echo $PATH | tr ':' '\n' | grep -v "/mnt/c/Users/YOUR_USERNAME/AppData/Roaming/npm" | tr '\n' ':' | sed 's/:$//')
 export GIT_ASKPASS="/mnt/c/Windows/System32/cmd.exe"
 export GIT_CREDENTIAL_HELPER="wincred"
-
-alias ll='ls -alF'
-alias aws-version='aws --version'
-alias cdk-version='cdk --version'
 ```
 
 ## Configure AWS credentials and environment variables
@@ -153,49 +153,9 @@ cdk destroy
 
 All configuration is managed through environment variables (no hardcoded values)
 
-@azarboon: go through each one by one and validate the diagram and components
+@azarboon: go through each one by one and validate these
 
-## 📊 Architecture Diagram
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   GitHub Repo   │───▶│API Gateway      │───▶│ GitHub Processor│
-│ (Push Webhook)  │    │ • REST Endpoint  │    │     Lambda      │
-│                 │    │ • Request Valid. │    │ • Event Filter  │
-└─────────────────┘    │ • CloudWatch Logs│    │ • GitHub API    │
-                       │ • JSON Schema    │    │ • Email Format  │
-                       └──────────────────┘    └─────────────────┘
-                                                         │
-                                                         ▼
-                       ┌──────────────────┐    ┌─────────────────┐
-                       │  GitHub API      │◀───│   SNS Topic     │
-                       │ (HTTPS Calls)    │    │ • Topic Policy  │
-                       │ • Commit Details │    │ • SSL Enforce   │
-                       │ • File Diffs     │    │ • Email Sub     │
-                       └──────────────────┘    └─────────────────┘
-                                                         │
-                                                         ▼
-                                               ┌─────────────────┐
-                                               │ Email Subscriber│
-                                               │ (Notifications) │
-                                               └─────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│                    Supporting Infrastructure                    │
-│                                                                 │
-│ • CloudWatch Log Groups (2): Lambda + API Gateway Access Logs  │
-│ • Custom IAM Roles (2): Lambda Execution + API Gateway Logs    │
-│ • Request Validator + JSON Schema Model (WebhookPayload)       │
-│ • SNS Topic Policy (SSL/TLS enforcement)                       │
-│ • Email Subscription (EmailSubscription to SNS topic)          │
-│ • API Gateway Account (CfnAccount for CloudWatch integration)  │
-│ • Resource Tagging (Environment + Project tags)                │
-│ • CloudFormation Outputs (Webhook URL + Topic ARN)             │
-│ • CDK Nag Suppressions (Security compliance annotations)       │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### **Data Flow:**
+## **Data Flow:**
 
 1. **GitHub Push Event** → Webhook triggers API Gateway `/webhook` endpoint
 2. **API Gateway** → Validates JSON payload against schema, logs to CloudWatch, forwards to Lambda
@@ -204,43 +164,12 @@ All configuration is managed through environment variables (no hardcoded values)
 5. **SNS Publishing** → Lambda formats email content and publishes to SNS topic
 6. **Email Delivery** → SNS delivers formatted commit notifications to email subscriber
 
-### **Complete Component List:**
-
-**Core Services (3):**
-
-- API Gateway REST API with `/webhook` endpoint and request validation
-- Lambda Function (NodeJS 22.x, X86_64, 512MB, 15s timeout)
-- SNS Topic with SSL/TLS enforcement policy
-
-**Supporting Resources (9):**
-
-- CloudWatch Log Group (Lambda): `/aws/lambda/{StackName}-github-processor` (3-day retention)
-- CloudWatch Log Group (API Gateway): `/aws/apigateway/{StackName}-access-logs` (3-day retention)
-- IAM Role (Lambda): Custom execution role with inline policies for CloudWatch + SNS
-- IAM Role (API Gateway): Custom CloudWatch logging role with scoped permissions
-- Request Validator: `{StackName}-request-validator` with body/parameter validation
-- JSON Schema Model: `{StackName}WebhookPayload` model for webhook request validation
-- SNS Topic Policy: Dedicated policy enforcing SSL/TLS transport security
-- Email Subscription: Direct email delivery from SNS topic (non-JSON format)
-- API Gateway Account: CfnAccount resource for CloudWatch logging integration
-
 ## 🔒 Security Features
 
-- **Custom IAM Roles**: Lambda and API Gateway use custom IAM roles with inline policies (no AWS managed policies)
-- **Least Privilege Access**: IAM policies scoped to specific resources with explicit ARNs
-- **SSL/TLS Enforcement**: SNS Topic Policy denies non-HTTPS transport (`aws:SecureTransport: false`)
-- **Request Validation**: API Gateway validates webhook payloads against JSON schema
-- **Event Type Filtering**: Lambda only processes push events (ignores ping, issues, etc.)
-- **Repository Validation**: Lambda validates incoming webhooks match target repository
-- **Environment Variable Configuration**: All sensitive values externalized to environment variables
-- **Request Timeouts**: 10-second timeout on GitHub API calls prevents hanging requests
-- **Secure Logging**: CloudWatch logs with 3-day retention, no credentials logged
-- **Resource Scoping**: IAM policies target specific log groups and SNS topics with full ARNs
+- This project follows [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md) rule pack through AWS CDK Nag check.
 
 ## 💰 FinOps practices
 
-- **Log Retention**: 1-week retention to control storage costs
-  @azarboon: validate the followings
 - **Resource Tagging**: All resources tagged for cost tracking
 
 ## 🗂️ Project Structure
