@@ -18,7 +18,7 @@ Due to the unpredictable behavior of Amazon Q CLI, there have been instances of 
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 <!-- address wherver there is @azarboon in the code -->
 
-<!-- in cdk.json file, app section: use precompiled JS (node lib/app.js) instead of ts-node for faster, reliable CDK deploys with explicit tsc control. -->
+<!-- ask chatgpt how to optimize ts compliation process both in ts settings, package.json as well as deploy.sh........in cdk.json file, app section: use precompiled JS (node lib/app.js) instead of ts-node for faster, reliable CDK deploys with explicit tsc control. -->
 
 ## Project rules
 
@@ -112,7 +112,6 @@ This script will:
 - Validates the CDK template
 - Deploys the stack
 
-
 **Alternative manual deployment:**
 
 First, update the environment variables in the `.env` file. Then run the following commands:
@@ -159,37 +158,86 @@ All configuration is managed through environment variables (no hardcoded values)
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   GitHub Repo   │───▶│   API Gateway    │───▶│ GitHub Processor│
-│ (azarboon/dummy)│    │ (REST API /webhook)   │     Lambda      │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+│ (Push Webhook)  │    │ • REST Endpoint  │    │     Lambda      │
+│                 │    │ • Request Valid. │    │ • Event Filter  │
+└─────────────────┘    │ • CloudWatch Logs│    │ • GitHub API    │
+                       │ • JSON Schema    │    │ • Email Format  │
+                       └──────────────────┘    └─────────────────┘
                                                          │
                                                          ▼
                        ┌──────────────────┐    ┌─────────────────┐
                        │  GitHub API      │◀───│   SNS Topic     │
-                       │ (Fetch git diffs)│    │(Email Notifications)│
+                       │ (HTTPS Calls)    │    │ • Topic Policy  │
+                       │ • Commit Details │    │ • SSL Enforce   │
+                       │ • File Diffs     │    │ • Email Sub     │
                        └──────────────────┘    └─────────────────┘
-                                ▲                        │
-                                │                        ▼
-                                └────────────────────────┘
-                                   Commit Details &
-                                    Git Diff Data
+                                                         │
+                                                         ▼
+                                               ┌─────────────────┐
+                                               │ Email Subscriber│
+                                               │ (Notifications) │
+                                               └─────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    Supporting Infrastructure                    │
+│                                                                 │
+│ • CloudWatch Log Groups (2): Lambda + API Gateway Access Logs  │
+│ • Custom IAM Roles (2): Lambda Execution + API Gateway Logs    │
+│ • Request Validator + JSON Schema Model (WebhookPayload)       │
+│ • SNS Topic Policy (SSL/TLS enforcement)                       │
+│ • Email Subscription (EmailSubscription to SNS topic)          │
+│ • API Gateway Account (CfnAccount for CloudWatch integration)  │
+│ • Resource Tagging (Environment + Project tags)                │
+│ • CloudFormation Outputs (Webhook URL + Topic ARN)             │
+│ • CDK Nag Suppressions (Security compliance annotations)       │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### **Complete Component List:**
+
+**Core Services (3):**
+
+- API Gateway REST API with `/webhook` endpoint and request validation
+- Lambda Function (NodeJS 22.x, X86_64, 512MB, 15s timeout)
+- SNS Topic with SSL/TLS enforcement policy
+
+**Supporting Resources (9):**
+
+- CloudWatch Log Group (Lambda): `/aws/lambda/GitHubMonitorStack-GitHubProcessor` (3-day retention)
+- CloudWatch Log Group (API Gateway): `/aws/apigateway/{StackName}-access-logs` (3-day retention)
+- IAM Role (Lambda): Custom execution role with inline policies for CloudWatch + SNS
+- IAM Role (API Gateway): Custom CloudWatch logging role with scoped permissions
+- Request Validator: `webhook-request-validator` with body/parameter validation
+- JSON Schema Model: `WebhookPayload` model for webhook request validation
+- SNS Topic Policy: Dedicated policy enforcing SSL/TLS transport security
+- Email Subscription: Direct email delivery from SNS topic (non-JSON format)
+- API Gateway Account: CfnAccount resource for CloudWatch logging integration
+
+### **Data Flow:**
+
+1. **GitHub Push Event** → Webhook triggers API Gateway `/webhook` endpoint
+2. **API Gateway** → Validates JSON payload against schema, logs to CloudWatch, forwards to Lambda
+3. **Lambda Function** → Filters push events, validates repository, processes up to 3 commits
+4. **GitHub API Calls** → Lambda makes HTTPS requests to fetch commit details and file diffs
+5. **SNS Publishing** → Lambda formats email content and publishes to SNS topic
+6. **Email Delivery** → SNS delivers formatted commit notifications to email subscriber
 
 ## 🔒 Security Features
 
-@azarboon: validates if these are actually true
+- **Custom IAM Roles**: Lambda and API Gateway use custom IAM roles with inline policies (no AWS managed policies)
+- **Least Privilege Access**: IAM policies scoped to specific resources with explicit ARNs
+- **SSL/TLS Enforcement**: SNS Topic Policy denies non-HTTPS transport (`aws:SecureTransport: false`)
+- **Request Validation**: API Gateway validates webhook payloads against JSON schema
+- **Event Type Filtering**: Lambda only processes push events (ignores ping, issues, etc.)
+- **Repository Validation**: Lambda validates incoming webhooks match target repository
+- **Environment Variable Configuration**: All sensitive values externalized to environment variables
+- **Request Timeouts**: 10-second timeout on GitHub API calls prevents hanging requests
+- **Secure Logging**: CloudWatch logs with 3-day retention, no credentials logged
+- **Resource Scoping**: IAM policies target specific log groups and SNS topics with full ARNs
 
-- **Least Privilege IAM**: All roles have minimal required permissions @azarboon:check for any automated test for this
-- **Event Type Filtering**: Only processes push events (ignores ping, issues, etc.)
-- **No Hardcoded Credentials**: Uses IAM roles and environment variables
-- **Environment Variable Configuration**: All sensitive values externalized
-- **Secure Logging**: No sensitive data or credentials in logs
-- **Request Timeouts**: Prevents hanging requests and runaway costs
-- **Resource Scoping**: IAM policies target specific resources where possible
-
-## 💰 Cost Optimization
+## 💰 FinOps practices
 
 - **Log Retention**: 1-week retention to control storage costs
-- **Early Returns**: Webhook receiver exits early for ignored events
 - **Resource Tagging**: All resources tagged for cost tracking
 
 ## 🗂️ Project Structure
@@ -214,7 +262,6 @@ All configuration is managed through environment variables (no hardcoded values)
 ├── .gitignore                           # Git ignore patterns
 ├── .prettierignore                      # Prettier ignore patterns
 ├── .prettierrc.json                     # Prettier configuration
-├── .tsbuildinfo                         # TypeScript build cache
 ├── cdk.json                             # CDK configuration
 ├── cdk.out/                             # CDK synthesis output (gitignored)
 ├── deploy.sh                            # Automated deployment script with .env loading
