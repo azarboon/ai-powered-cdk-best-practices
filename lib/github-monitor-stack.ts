@@ -195,13 +195,31 @@ export class GitHubMonitorStack extends cdk.Stack {
     account.node.addDependency(apiLogGroup);
     account.node.addDependency(apiGatewayCloudWatchRole);
 
-    // API Gateway with proper logging and validation
+    // API Gateway with logging and validation
     const api = new apigateway.RestApi(this, 'WebhookApi', {
       restApiName: `${stackName}-api`,
       description: `${stackName} webhook receiver`,
       deployOptions: {
         accessLogDestination: new apigateway.LogGroupLogDestination(apiLogGroup),
-        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields(),
+        accessLogFormat: apigateway.AccessLogFormat.custom(
+          JSON.stringify({
+            requestId: '$context.requestId',
+            requestTime: '$context.requestTime',
+            httpMethod: '$context.httpMethod',
+            resourcePath: '$context.resourcePath',
+            status: '$context.status',
+            error: {
+              message: '$context.error.message',
+              messageString: '$context.error.messageString',
+            },
+            responseLength: '$context.responseLength',
+            requestLength: '$context.requestLength',
+            ip: '$context.identity.sourceIp',
+            userAgent: '$context.identity.userAgent',
+            requestHeaders: '$context.requestHeaders',
+            responseTime: '$context.responseTime',
+          })
+        ),
         loggingLevel: apigateway.MethodLoggingLevel.INFO,
         dataTraceEnabled: true,
         metricsEnabled: true,
@@ -212,6 +230,41 @@ export class GitHubMonitorStack extends cdk.Stack {
           validateRequestBody: true,
           validateRequestParameters: true,
         },
+      },
+    });
+
+    // Add custom error responses for better user experience
+    api.addGatewayResponse('BadRequest', {
+      type: apigateway.ResponseType.BAD_REQUEST_BODY,
+      statusCode: '400',
+      templates: {
+        'application/json': JSON.stringify({
+          error: 'Invalid request payload',
+          message:
+            'The request body does not match the expected schema. Please verify the payload structure and required fields.',
+          details: '$context.error.validationErrorString',
+          requestId: '$context.requestId',
+        }),
+      },
+      responseHeaders: {
+        // eslint-disable-next-line quotes
+        'Content-Type': "'application/json'",
+      },
+    });
+
+    api.addGatewayResponse('DefaultResponse', {
+      type: apigateway.ResponseType.DEFAULT_4XX,
+      statusCode: '400',
+      templates: {
+        'application/json': JSON.stringify({
+          error: 'Request validation failed',
+          message: 'The request could not be processed due to validation errors.',
+          requestId: '$context.requestId',
+        }),
+      },
+      responseHeaders: {
+        // eslint-disable-next-line quotes
+        'Content-Type': "'application/json'",
       },
     });
 
@@ -227,16 +280,50 @@ export class GitHubMonitorStack extends cdk.Stack {
         validateRequestParameters: true,
       }),
       requestModels: {
-        'application/json': new apigateway.Model(this, 'WebhookModel', {
+        'application/json': new apigateway.Model(this, 'WebhookModelSchema', {
           restApi: api,
           contentType: 'application/json',
-          modelName: `${stackName}WebhookPayload`,
+          modelName: `${stackName}WebhookPayloadSchema`,
           schema: {
             type: apigateway.JsonSchemaType.OBJECT,
             properties: {
-              ref: { type: apigateway.JsonSchemaType.STRING },
-              repository: { type: apigateway.JsonSchemaType.OBJECT },
-              commits: { type: apigateway.JsonSchemaType.ARRAY },
+              ref: {
+                type: apigateway.JsonSchemaType.STRING,
+                description: 'Git reference (branch/tag) that was pushed',
+              },
+              repository: {
+                type: apigateway.JsonSchemaType.OBJECT,
+                description: 'Repository information from GitHub',
+                properties: {
+                  full_name: {
+                    type: apigateway.JsonSchemaType.STRING,
+                    description: 'Full repository name (owner/repo)',
+                    pattern: '^[^/]+/[^/]+$',
+                    minLength: 3,
+                  },
+                },
+                required: ['full_name'],
+              },
+              commits: {
+                type: apigateway.JsonSchemaType.ARRAY,
+                description: 'Array of commit objects',
+                items: {
+                  type: apigateway.JsonSchemaType.OBJECT,
+                  properties: {
+                    id: { type: apigateway.JsonSchemaType.STRING },
+                    message: { type: apigateway.JsonSchemaType.STRING },
+                    timestamp: { type: apigateway.JsonSchemaType.STRING },
+                    url: { type: apigateway.JsonSchemaType.STRING },
+                    author: {
+                      type: apigateway.JsonSchemaType.OBJECT,
+                      properties: {
+                        name: { type: apigateway.JsonSchemaType.STRING },
+                      },
+                    },
+                  },
+                  required: ['id', 'message', 'timestamp', 'url'],
+                },
+              },
             },
             required: ['repository'],
           },

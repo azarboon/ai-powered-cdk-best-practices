@@ -153,20 +153,21 @@ cdk destroy
 
 All configuration is managed through environment variables (no hardcoded values)
 
-@azarboon: go through each one by one and validate these
-
 ## **Data Flow:**
 
-1. **GitHub Push Event** → Webhook triggers API Gateway `/webhook` endpoint
-2. **API Gateway** → Validates JSON payload against schema, logs to CloudWatch, forwards to Lambda
-3. **Lambda Function** → Filters push events, validates repository, processes up to 3 commits
-4. **GitHub API Calls** → Lambda makes HTTPS requests to fetch commit details and file diffs
+1. **GitHub Push Event** → Webhook triggers `WebhookApi`
+2. **API Gateway** → Validates JSON payload against schema, logs metada to Cloudwatch, forwards to Lambda
+   @azarboon: continue from the following
+3. **Lambda Function processor** → The lambda processor filters push events, validates repository, processes only the final commit from each push
+4. **GitHub API Calls** → Lambda processor makes HTTPS requests to fetch commit details and file diffs
 5. **SNS Publishing** → Lambda formats email content and publishes to SNS topic
 6. **Email Delivery** → SNS delivers formatted commit notifications to email subscriber
 
 ## 🔒 Security Features
 
 - This project follows [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md) rule pack through AWS CDK Nag check.
+- API Gateway logs metadata for both requests and responses. @azarboon: validate this
+- API Gateway performs schema validation on webhook payloads.
 
 ## 💰 FinOps practices
 
@@ -222,7 +223,7 @@ You can verify the added rules by running:
 
 ## 🔌 Model Context Protocol (MCP) Integration
 
-> NOTE: The local MCP servers are currently unstable and prone to bugs especially in WSL2 environment while using Windows 11. Even AWS, via their MCP GitHub repository, advises against using their MCPs in production environments. Their behavior is inconsistent—sometimes they function correctly, other times they do not. This section has been created for personal reference, and may be modified or removed in the future.
+> NOTE: As of this writing, AWS advises against using AWS MCP servers in production environments due to their inconsistent behavior. Specifically, the integration between the AWS MCP servers and Amazon Q CLI is currently unstable and prone to bugs, especially in the WSL2 environment on Windows 11. The functionality of the servers fluctuates with each update to Q CLI—sometimes they work correctly, while at other times they do not.
 
 The MCP server configuration is located in `.amazonq/mcp.json`. This project supports both remote and local MCP server configurations:
 
@@ -275,3 +276,9 @@ Start Amazon Q CLI in a third terminal:
 `q chat > "test integration with all configured mcp servers"`
 
 **Note:** At the time of writing, local MCP servers—particularly the AWS API MCP Server—may show unstable behavior in WSL2 environment. To confirm MCP server usage, explicitly ask Amazon Q within the session to verify MCP integration status.
+
+## Testing
+
+### Integration Test
+
+A sample payload has been provided in `test\sample-webhook-payload.json` for integration testing. Ensure that the header `X-GitHub-Event=push` is set. Additionally, there may be checks such as matching `owner/repo` with the environment variables in `.env`. Refer to the schema used by API Gateway for request validation (i.e., `requestModels` in `lib\github-monitor-stack.ts`), as well as any further validations implemented in `lambda\processor.ts`.

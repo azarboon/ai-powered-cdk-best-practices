@@ -1,8 +1,12 @@
 /**
  * GitHub Webhook Processor Lambda Function.
  *
- * Handles: Webhook validation → Git diff fetching → Email notification
- * Replaces: Webhook receiver + EventBridge + Step Functions + Git diff processor
+ * Processes GitHub push events by:
+ * 1. Validating webhook payload
+ * 2. Extracting the final (most recent) commit from the push
+ * 3. Fetching detailed git diff for the final commit
+ * 4. Sending formatted email notification via SNS
+ *@azarboon: remove duplications in the code. clean it up
  */
 
 import * as https from 'https';
@@ -44,52 +48,153 @@ interface GitHubCommitData {
 export const handler = async (event: APIGatewayEvent) => {
   console.log(`[${ENVIRONMENT}] Processing webhook for ${GITHUB_REPOSITORY}`);
 
+  // Enhanced logging: Log entire request for troubleshooting
+  console.log(`[${ENVIRONMENT}] Request details:`, {
+    headers: event.headers,
+    bodyLength: event.body?.length || 0,
+    timestamp: new Date().toISOString(),
+  });
+
   try {
     const payload: GitHubWebhookPayload = JSON.parse(event.body);
     const githubEvent = event.headers['x-github-event'] || event.headers['X-GitHub-Event'];
 
+    // Log parsed payload structure (without sensitive data)
+    console.log(`[${ENVIRONMENT}] Parsed payload structure:`, {
+      hasRepository: !!payload.repository,
+      repositoryName: payload.repository?.full_name,
+      commitsCount: payload.commits?.length || 0,
+      ref: payload.ref,
+      githubEvent,
+    });
+
     // Filter: Only push events
     if (githubEvent !== 'push') {
       console.log(`[${ENVIRONMENT}] Ignoring ${githubEvent} event`);
-      return { statusCode: 200, body: 'Event ignored' };
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'Event ignored',
+          reason: `Only 'push' events are processed, received: ${githubEvent}`,
+          timestamp: new Date().toISOString(),
+        }),
+      };
     }
 
-    // Filter: Only target repository
-    if (payload.repository?.full_name !== GITHUB_REPOSITORY) {
-      console.log(`[${ENVIRONMENT}] Ignoring different repository`);
-      return { statusCode: 200, body: 'Repository ignored' };
+    // Validate repository structure exists in payload
+    if (!payload.repository) {
+      console.error(`[${ENVIRONMENT}] Missing 'repository' object in payload`);
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Invalid payload structure',
+          message: 'Missing required field: repository',
+          expectedStructure: { repository: { full_name: 'owner/repo' } },
+          timestamp: new Date().toISOString(),
+          requestId: event.headers['x-amzn-requestid'] || 'unknown',
+        }),
+      };
+    }
+
+    // @azarboon can you marge the following two checks?
+
+    // Validate repository.full_name exists and is not empty
+    if (!payload.repository.full_name || typeof payload.repository.full_name !== 'string') {
+      console.error(
+        `[${ENVIRONMENT}] Missing or invalid repository.full_name in payload:`,
+        payload.repository.full_name
+      );
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Invalid payload structure',
+          message: 'Missing or invalid required field: repository.full_name',
+          expectedFormat: 'owner/repo',
+          receivedValue: payload.repository.full_name,
+          timestamp: new Date().toISOString(),
+          requestId: event.headers['x-amzn-requestid'] || 'unknown',
+        }),
+      };
+    }
+
+    // Validate repository.full_name format (should be owner/repo)
+    if (!payload.repository.full_name.includes('/')) {
+      console.error(
+        `[${ENVIRONMENT}] Invalid repository.full_name format:`,
+        payload.repository.full_name
+      );
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Invalid repository format',
+          message: 'repository.full_name must be in format "owner/repo"',
+          expectedFormat: 'owner/repo',
+          receivedValue: payload.repository.full_name,
+          timestamp: new Date().toISOString(),
+          requestId: event.headers['x-amzn-requestid'] || 'unknown',
+        }),
+      };
+    }
+
+    // Filter: Only target repository with detailed validation
+    if (payload.repository.full_name !== GITHUB_REPOSITORY) {
+      console.log(
+        `[${ENVIRONMENT}] Repository mismatch - Expected: ${GITHUB_REPOSITORY}, Received: ${payload.repository.full_name}`
+      );
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Repository not authorized',
+          message: `This webhook is configured for repository '${GITHUB_REPOSITORY}' but received payload for '${payload.repository.full_name}'`,
+          expectedRepository: GITHUB_REPOSITORY,
+          receivedRepository: payload.repository.full_name,
+          timestamp: new Date().toISOString(),
+          requestId: event.headers['x-amzn-requestid'] || 'unknown',
+        }),
+      };
     }
 
     const commits = payload.commits || [];
     if (commits.length === 0) {
       console.log(`[${ENVIRONMENT}] No commits found`);
-      return { statusCode: 200, body: 'No commits' };
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'No commits to process',
+          timestamp: new Date().toISOString(),
+        }),
+      };
     }
 
-    console.log(`[${ENVIRONMENT}] Processing ${commits.length} commits`);
+    // Process only the final (most recent) commit from the push
+    const finalCommit = commits[commits.length - 1];
+    console.log(`[${ENVIRONMENT}] Processing final commit: ${finalCommit.id}`);
 
-    // Fetch git diffs for commits
-    const commitDetails = await Promise.all(
-      commits.slice(0, 3).map(async commit => {
-        try {
-          const diffData = await fetchCommitDiff(commit.id);
-          return {
-            ...commit,
-            diff: formatDiff(diffData),
-          };
-        } catch (error) {
-          console.error(`[${ENVIRONMENT}] Error fetching diff for ${commit.id}:`, error);
-          return {
-            ...commit,
-            diff: 'Error fetching diff',
-          };
-        }
-      })
-    );
+    // Fetch git diff for the final commit
+    let commitDetails;
+    try {
+      const diffData = await fetchCommitDiff(finalCommit.id);
+      commitDetails = {
+        ...finalCommit,
+        diff: formatDiff(diffData),
+      };
+    } catch (error) {
+      console.error(`[${ENVIRONMENT}] Error fetching diff for ${finalCommit.id}:`, error);
+      commitDetails = {
+        ...finalCommit,
+        diff: 'Error fetching diff',
+      };
+    }
 
-    // Send email notification
+    // Send email notification for the final commit
     const emailSubject = `GitHub Push: ${commits.length} commit(s) to ${GITHUB_REPOSITORY}`;
-    const emailBody = formatEmail(commitDetails);
+    const emailBody = formatEmail([commitDetails], commits.length);
 
     await sns.send(
       new PublishCommand({
@@ -99,21 +204,52 @@ export const handler = async (event: APIGatewayEvent) => {
       })
     );
 
-    console.log(`[${ENVIRONMENT}] Email sent successfully`);
+    console.log(`[${ENVIRONMENT}] Email sent successfully for final commit: ${finalCommit.id}`);
 
     return {
       statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         message: 'Webhook processed successfully',
-        commits: commits.length,
+        totalCommits: commits.length,
+        processedCommit: finalCommit.id,
         repository: GITHUB_REPOSITORY,
+        processedAt: new Date().toISOString(),
       }),
     };
   } catch (error) {
-    console.error(`[${ENVIRONMENT}] Error:`, error);
+    console.error(`[${ENVIRONMENT}] Error processing webhook:`, {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+      requestHeaders: event.headers,
+      bodyLength: event.body?.length || 0,
+    });
+
+    // Determine error type and provide appropriate response
+    let statusCode = 500;
+    let errorMessage = 'Internal server error occurred while processing webhook';
+
+    if (error instanceof SyntaxError) {
+      statusCode = 400;
+      errorMessage = 'Invalid JSON payload';
+    } else if (error instanceof Error && error.message.includes('validation')) {
+      statusCode = 400;
+      errorMessage = 'Payload validation failed';
+    }
+
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Processing failed' }),
+      statusCode,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+        requestId: event.headers['x-amzn-requestid'] || 'unknown',
+      }),
     };
   }
 };
@@ -175,20 +311,24 @@ function formatDiff(commitData: GitHubCommitData): string {
   return diff;
 }
 
-function formatEmail(commits: any[]): string {
+function formatEmail(commitDetails: any[], totalCommits: number): string {
   let message = `New commits pushed to ${GITHUB_REPOSITORY}\n`;
   message += `Environment: ${ENVIRONMENT}\n`;
+
+  if (totalCommits > 1) {
+    message += `Total commits in push: ${totalCommits} (showing final commit only)\n`;
+  }
+
   message += '='.repeat(50) + '\n\n';
 
-  commits.forEach((commit, i) => {
-    message += `Commit ${i + 1}:\n`;
-    message += `SHA: ${commit.id}\n`;
-    message += `Author: ${commit.author?.name || 'Unknown'}\n`;
-    message += `Message: ${commit.message}\n`;
-    message += `URL: ${commit.url}\n\n`;
-    message += `Changes:\n${commit.diff}\n\n`;
-    message += '*'.repeat(50) + '\n\n';
-  });
+  // Process the single commit (final commit)
+  const commit = commitDetails[0];
+  message += 'Final Commit:\n';
+  message += `SHA: ${commit.id}\n`;
+  message += `Author: ${commit.author?.name || 'Unknown'}\n`;
+  message += `Message: ${commit.message}\n`;
+  message += `URL: ${commit.url}\n\n`;
+  message += `Changes:\n${commit.diff}\n\n`;
 
   message += `Repository: https://github.com/${GITHUB_REPOSITORY}\n`;
   return message;
