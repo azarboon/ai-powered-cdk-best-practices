@@ -247,7 +247,6 @@ export class GitHubMonitorStack extends cdk.Stack {
         }),
       },
       responseHeaders: {
-        // eslint-disable-next-line quotes
         'Content-Type': "'application/json'",
       },
     });
@@ -263,7 +262,6 @@ export class GitHubMonitorStack extends cdk.Stack {
         }),
       },
       responseHeaders: {
-        // eslint-disable-next-line quotes
         'Content-Type': "'application/json'",
       },
     });
