@@ -1,4 +1,14 @@
 {
+  "name": "MyAgent",
+  "description": "my default agent to be initialized",
+  "hooks": {
+    "agentSpawn": [
+      {
+        "command": "cat .amazonq/rules/PROJECT_RULES.md"
+      }
+    ]
+  },
+  "resources": ["file://README.md", "file://.amazonq/rules/PROJECT_RULES.md"],
   "mcpServers": {
     "awslabs.aws-api-mcp-server": {
       "command": "uvx",
@@ -31,5 +41,7 @@
         "FASTMCP_LOG_LEVEL": "DEBUG"
       }
     }
-  }
+  },
+  "allowedTools": ["fs_read", "@git"],
+  "useLegacyMcpJson": true
 }
