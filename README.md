@@ -177,6 +177,8 @@ All configuration is managed through environment variables (no hardcoded values)
 
 ## 🗂️ Project Structure
 
+@azarboon: update this to include latest cli config such as .amazonq\mcp.json
+
 ```
 ├── bin/
 │   └── app.ts                           # CDK app entry point with env var support
@@ -185,7 +187,7 @@ All configuration is managed through environment variables (no hardcoded values)
 ├── lambda/
 │   └── processor.ts                     # Single Lambda function (webhook + git diff + email)
 ├── .amazonq/
-│   ├── mcp.json                         # Model Context Protocol configuration
+│   ├── mcp.json                       # Amazon Q CLI agent and MCP configuration
 │   └── rules/
 │       └── PROJECT_RULES.md             # Development rules and guidelines
 ├── .husky/
