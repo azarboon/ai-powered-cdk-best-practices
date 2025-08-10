@@ -5,11 +5,13 @@
 
 # AI-Powered Serverless Boilerplate with AWS CDK and TypeScript Following Best Practices
 
-This AWS CDK application monitors any GitHub repository (in this example, `azarboon/dummy`) for new commits and reads the content of its README file. It is an educational AWS app built with AWS CDK in TypeScript, designed to leverage AI-powered tools for development (e.g., agentic coders and Model Context Protocol - MCPs) and to demonstrate best practices such as automated code quality checks, security validations, tests, and more.
+This project demonstrates best practices for building serverless applications using AWS CDK (TypeScript) and AI-powered development tools. Its sample business logic is intentionally simple: monitor the `README` file in the `azarboon/dummy` GitHub repository for new commits, parse and filter its content, and notify the user of git differences. The simplicity makes it easy to replace the business logic with other use cases, and use its AI contexts, security checks, or code quality tests for your own app.
 
-The app is developed using Amazon Q CLI Developer, but other agentic coders can be used as well. While Amazon Q CLI can be highly capable, it may also behave unpredictably. This project focuses on harnessing its capabilities effectively. To support this, special attention is given to the development context—specifically, the rules the AI assistant must follow, which are defined in `.amazonq\rules\PROJECT_RULES.md`. These rules are designed to guide Amazon Q CLI usage but can also be applied to other AI assistants or projects. The goal is to create a boilerplate that simplifies working with Amazon Q CLI while enforcing solid development practices.
+The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AWS Model Context Protocol (MCP) servers, though it can be adapted for other coding agents or MCP implementations. Development rules for the AI assistant are defined in `.amazonq/rules/PROJECT_RULES.md` to ensure consistent, secure, and high-quality outputs following the best practices. While these contexts and configurations are not perfect and continue to be optimized, they can be applied to other projects.
 
 ## Warning
+
+**Security Note:** [Context poisoning](https://martinfowler.com/articles/exploring-gen-ai/software-supply-chain-attack-surface.html) is a major risk when using coding assistants. Always review and validate external contexts and project rules before adopting them.
 
 Due to the unpredictable behavior of Amazon Q CLI, there have been instances of unintended commits or bloated logic. I continuously address and correct these issues as they arise. Contributions and pull requests are welcome.
 
