@@ -9,8 +9,6 @@
 
 ### IAM Policy Resource Rules
 
-### IAM Policy Resource Rules
-
 **All IAM policies must follow least-privilege principles and use fully qualified ARNs whenever possible.**
 
 - Prefer explicit ARNs constructed using `cdk.Aws.REGION`, `cdk.Aws.ACCOUNT_ID`, and consistent naming conventions.
@@ -33,11 +31,39 @@ All suggested changes, fixes, upgrades, deletions, or modifications MUST be pres
 
 This rule MUST be followed strictly across the entire project lifecycle
 
+# TypeScript and Code-Related Rules
+
+## Avoid Implicit Defaults with `||`
+
+- Do **not** use the `||` operator to assign default values to variables or properties unless explicitly requested by a human and approved.
+- This prevents unintentionally masking valid falsy values and ensures defaults are applied only with deliberate intent.
+
 # AWS CDK Project Rules
 
 These rules are aligned with AWS CDK official best practices and MUST be strictly followed throughout the entire project to ensure clean, maintainable, and predictable AWS infrastructure code.
 
 ---
+
+## CDK Construct Selection Policy
+
+1. Always use the highest-level CDK construct (L3/pattern) that meets functional, security, compliance, and cost requirements **and** is actively maintained (updated within the last 6 months, with responsive issue handling).
+2. If no suitable L3 exists or it imposes unacceptable constraints:
+   - Use an L2 construct instead.
+   - Document why a higher-level construct was not suitable and how it was evaluated.
+   - Obtain explicit approval before implementation.
+3. Use an L1 construct only if:
+   - The required capability is not available in L2/L3, or
+   - Fine-grained control is needed beyond what L2/L3 allow.
+   - Keep the L1 scope minimal and wrap it in a custom construct.
+   - Apply the same documentation and approval rules as for L2.
+4. Before selecting a construct:
+   - Search the AWS CDK documentation and construct catalogs.
+   - Check maintenance status, feature coverage, limits, and roadmap.
+5. Do not rely solely on defaults. Explicitly review and configure IAM, encryption, networking, and observability settings as needed.
+6. All constructs and configurations must be validated with:
+   - Unit tests for logic, and
+   - Integration tests that verify the actual AWS resources created.
+7. Prefer composition over inheritance. Keep construct APIs stable to allow easy swapping between L1, L2, and L3 in the future.
 
 ## Naming Convention Rule – Dynamic Component Names
 

@@ -5,9 +5,13 @@
 
 # AI-Powered Serverless Boilerplate with AWS CDK and TypeScript Following Best Practices
 
-This project demonstrates best practices for building serverless applications using AWS CDK (TypeScript) and AI-powered development tools. Its sample business logic is intentionally simple: monitor the `README` file in the `azarboon/dummy` GitHub repository for new commits, parse and filter its content, and notify the user of git differences. The simplicity makes it easy to replace the business logic with other use cases, and use its AI contexts, security checks, or code quality tests for your own app.
+This project demonstrates best practices for building serverless applications using AWS CDK (TypeScript) and AI-powered development tools. The sample business logic—monitoring changed files in the `azarboon/dummy` GitHub repository for new commits, parsing and filtering their content, and notifying the user of git differences—is intentionally simple. This simplicity makes it easy to replace the business logic with other use cases while reusing the AI contexts, security checks, and code quality tests.
 
-The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AWS Model Context Protocol (MCP) servers, though it can be adapted for other coding agents or MCP implementations. Development rules for the AI assistant are defined in `.amazonq/rules/PROJECT_RULES.md` to ensure consistent, secure, and high-quality outputs following the best practices. While these contexts and configurations are not perfect and continue to be optimized, they can be applied to other projects.
+The focus is on application- and project-level settings, such as automated code quality checks and AI tool integration, rather than on optimizing business logic, which is an ongoing process. The goal is to establish reusable best practices for TypeScript projects and AWS CDK that apply across different projects, regardless of their specific logic.
+
+The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AWS Model Context Protocol (MCP) servers, but it can be adapted for other coding agents or MCP implementations. Development rules for the AI assistant are defined in `.amazonq/rules/PROJECT_RULES.md` to ensure consistent, secure, and high-quality outputs following best practices. While these contexts and configurations are not perfect and continue to evolve, they are designed for reuse in other projects.
+
+@azarboon: test by creating and changing a new file, than just README.
 
 ## Warning
 
@@ -21,6 +25,25 @@ Due to the unpredictable behavior of Amazon Q CLI, there have been instances of 
 
 create an event for integration test
 validate the data flow and write units
+
+Do these to optimize lambda\processor.ts
+
+1. **Update CDK stack to use the `aws-apigateway-lambda` Solutions Construct**
+2. **Add environment variable validation at function startup**
+3. **Implement Lambda Powertools (Logger, Tracer, Metrics)** and create a Lambda Layer for dependencies if needed
+4. **Replace all `console.log` with structured logging** (use Lambda Powertools)
+5. **Consolidate duplicate logic into reusable functions**
+   - One standardized response builder (timestamp, headers, etc.)
+   - One centralized error handler
+   - Merge the three similar repository checks into a single function
+6. **Implement proper error classification and standardized responses**
+7. **Move SNS client initialization outside the handler**
+8. **Replace `https` module with AWS SDK v3 HTTP client**
+9. **Implement connection pooling for HTTP requests**
+10. **Add retry logic with exponential backoff for GitHub API calls**
+11. **Add X-Ray tracing and implement correlation IDs**
+12. **Convert hardcoded `"GitHub-Monitor"` to use `CDK_STACK_NAME` env var**
+13. Put all logics for validating the payload into its own function and call it "payloadChecker"
 
 <!-- address wherver there is @azarboon in the code -->
 
@@ -285,4 +308,6 @@ Start Amazon Q CLI in a third terminal:
 
 ### Integration Test
 
-A sample payload has been provided in `test\sample-webhook-payload.json` for integration testing. Ensure that the header `X-GitHub-Event=push` is set. Additionally, there may be checks such as matching `owner/repo` with the environment variables in `.env`. Refer to the schema used by API Gateway for request validation (i.e., `requestModels` in `lib\github-monitor-stack.ts`), as well as any further validations implemented in `lambda\processor.ts`.
+A sample payload has been provided in `test\sample-webhook-payload.json` for integration testing. Ensure that the header `X-GitHub-Event=push` is set. Since a secret is involved, ensure that the X-Hub-Signature-256 header is set correctly. I recommend creating a sample webhook from GitHub to validate the configuration before proceeding.
+
+Additionally, there may be checks such as matching `owner/repo` with the environment variables in `.env`. Refer to the schema used by API Gateway for request validation (i.e., `requestModels` in `lib\github-monitor-stack.ts`), as well as any further validations implemented in `lambda\processor.ts`.

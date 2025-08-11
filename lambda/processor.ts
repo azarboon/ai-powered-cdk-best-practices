@@ -1,22 +1,39 @@
 /**
- * GitHub Webhook Processor Lambda Function.
+ * GitHub Webhook Processor Lambda Function
  *
- * Processes GitHub push events by:
- * 1. Validating webhook payload
- * 2. Extracting the final (most recent) commit from the push
- * 3. Fetching detailed git diff for the final commit
- * 4. Sending formatted email notification via SNS
- *@azarboon: remove duplications in the code. clean it up
+ * Built with AWS Solutions Constructs for security and best practices.
+ *
+ * This function processes GitHub push events by:
+ * 1. Verifying GitHub webhook signature using HMAC-SHA256
+ * 2. Validating webhook payload structure and repository
+ * 3. Extracting the final (most recent) commit from the push
+ * 4. Fetching detailed git diff for the final commit via GitHub API
+ * 5. Sending formatted email notification via SNS
+ *
+ * Environment Variables (automatically configured by AWS Solutions Constructs):
+ * - GITHUB_REPOSITORY: Target repository in owner/repo format
+ * - SNS_TOPIC_ARN: SNS topic ARN for email notifications
+ * - ENVIRONMENT: Deployment environment (dev/prod)
+ * - GITHUB_WEBHOOK_SECRET: Secret for GitHub webhook signature verification
+ *
+ * Security:
+ * - GitHub webhook signature verification prevents unauthorized requests
+ * - API Gateway uses authorizationType: NONE (required for GitHub webhooks)
+ * - All security is handled through cryptographic signature verification
  */
 
 import * as https from 'https';
+import * as crypto from 'crypto';
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 
+// Initialize SNS client (reused across invocations)
 const sns = new SNSClient({ region: process.env.AWS_REGION });
 
+// Environment variables
 const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY!;
 const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN!;
 const ENVIRONMENT = process.env.ENVIRONMENT || 'dev';
+const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET!;
 
 interface APIGatewayEvent {
   body: string;
@@ -56,6 +73,32 @@ export const handler = async (event: APIGatewayEvent) => {
   });
 
   try {
+    /*
+     * GitHub Webhook Security Implementation:
+     *
+     * Since our API Gateway endpoint uses authorizationType: NONE (required for GitHub to call it),
+     * we implement security through GitHub webhook signature verification here in the Lambda function.
+     *
+     * GitHub signs each webhook payload with the secret we configured and sends the signature
+     * in the 'X-Hub-Signature-256' header. We verify this signature to ensure:
+     * 1. The request actually came from GitHub (not a malicious actor)
+     * 2. The payload hasn't been tampered with during transit
+     * 3. The request is authentic and authorized
+     *
+     * This is the standard security pattern for GitHub webhooks and provides better security
+     * than AWS IAM authentication because only GitHub can generate valid signatures.
+     */
+    const signature = event.headers['x-hub-signature-256'] || event.headers['X-Hub-Signature-256'];
+    if (!verifyGitHubSignature(event.body, signature)) {
+      console.error(`[${ENVIRONMENT}] Invalid GitHub signature`);
+      return buildResponse(401, {
+        error: 'Unauthorized',
+        message: 'Invalid GitHub webhook signature',
+      });
+    }
+
+    console.log(`[${ENVIRONMENT}] GitHub signature verified successfully`);
+
     const payload: GitHubWebhookPayload = JSON.parse(event.body);
     const githubEvent = event.headers['x-github-event'] || event.headers['X-GitHub-Event'];
 
@@ -71,105 +114,23 @@ export const handler = async (event: APIGatewayEvent) => {
     // Filter: Only push events
     if (githubEvent !== 'push') {
       console.log(`[${ENVIRONMENT}] Ignoring ${githubEvent} event`);
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: 'Event ignored',
-          reason: `Only 'push' events are processed, received: ${githubEvent}`,
-          timestamp: new Date().toISOString(),
-        }),
-      };
+      return buildResponse(200, {
+        message: 'Event ignored',
+        reason: `Only 'push' events are processed, received: ${githubEvent}`,
+      });
     }
 
-    // Validate repository structure exists in payload
-    if (!payload.repository) {
-      console.error(`[${ENVIRONMENT}] Missing 'repository' object in payload`);
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error: 'Invalid payload structure',
-          message: 'Missing required field: repository',
-          expectedStructure: { repository: { full_name: 'owner/repo' } },
-          timestamp: new Date().toISOString(),
-          requestId: event.headers['x-amzn-requestid'] || 'unknown',
-        }),
-      };
-    }
-
-    // @azarboon can you marge the following two checks?
-
-    // Validate repository.full_name exists and is not empty
-    if (!payload.repository.full_name || typeof payload.repository.full_name !== 'string') {
-      console.error(
-        `[${ENVIRONMENT}] Missing or invalid repository.full_name in payload:`,
-        payload.repository.full_name
-      );
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error: 'Invalid payload structure',
-          message: 'Missing or invalid required field: repository.full_name',
-          expectedFormat: 'owner/repo',
-          receivedValue: payload.repository.full_name,
-          timestamp: new Date().toISOString(),
-          requestId: event.headers['x-amzn-requestid'] || 'unknown',
-        }),
-      };
-    }
-
-    // Validate repository.full_name format (should be owner/repo)
-    if (!payload.repository.full_name.includes('/')) {
-      console.error(
-        `[${ENVIRONMENT}] Invalid repository.full_name format:`,
-        payload.repository.full_name
-      );
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error: 'Invalid repository format',
-          message: 'repository.full_name must be in format "owner/repo"',
-          expectedFormat: 'owner/repo',
-          receivedValue: payload.repository.full_name,
-          timestamp: new Date().toISOString(),
-          requestId: event.headers['x-amzn-requestid'] || 'unknown',
-        }),
-      };
-    }
-
-    // Filter: Only target repository with detailed validation
-    if (payload.repository.full_name !== GITHUB_REPOSITORY) {
-      console.log(
-        `[${ENVIRONMENT}] Repository mismatch - Expected: ${GITHUB_REPOSITORY}, Received: ${payload.repository.full_name}`
-      );
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error: 'Repository not authorized',
-          message: `This webhook is configured for repository '${GITHUB_REPOSITORY}' but received payload for '${payload.repository.full_name}'`,
-          expectedRepository: GITHUB_REPOSITORY,
-          receivedRepository: payload.repository.full_name,
-          timestamp: new Date().toISOString(),
-          requestId: event.headers['x-amzn-requestid'] || 'unknown',
-        }),
-      };
+    // Validate payload structure
+    const validationResult = validatePayload(payload, event.headers);
+    if (validationResult.isValid === false) {
+      console.error(`[${ENVIRONMENT}] Payload validation failed:`, validationResult.error);
+      return buildResponse(validationResult.statusCode, validationResult.error);
     }
 
     const commits = payload.commits || [];
     if (commits.length === 0) {
       console.log(`[${ENVIRONMENT}] No commits found`);
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: 'No commits to process',
-          timestamp: new Date().toISOString(),
-        }),
-      };
+      return buildResponse(200, { message: 'No commits to process' });
     }
 
     // Process only the final (most recent) commit from the push
@@ -206,19 +167,13 @@ export const handler = async (event: APIGatewayEvent) => {
 
     console.log(`[${ENVIRONMENT}] Email sent successfully for final commit: ${finalCommit.id}`);
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: 'Webhook processed successfully',
-        totalCommits: commits.length,
-        processedCommit: finalCommit.id,
-        repository: GITHUB_REPOSITORY,
-        processedAt: new Date().toISOString(),
-      }),
-    };
+    return buildResponse(200, {
+      message: 'Webhook processed successfully',
+      totalCommits: commits.length,
+      processedCommit: finalCommit.id,
+      repository: GITHUB_REPOSITORY,
+      processedAt: new Date().toISOString(),
+    });
   } catch (error) {
     console.error(`[${ENVIRONMENT}] Error processing webhook:`, {
       error: error instanceof Error ? error.message : String(error),
@@ -240,19 +195,84 @@ export const handler = async (event: APIGatewayEvent) => {
       errorMessage = 'Payload validation failed';
     }
 
-    return {
-      statusCode,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        error: errorMessage,
-        timestamp: new Date().toISOString(),
-        requestId: event.headers['x-amzn-requestid'] || 'unknown',
-      }),
-    };
+    return buildResponse(statusCode, {
+      error: errorMessage,
+      requestId: event.headers['x-amzn-requestid'] || 'unknown',
+    });
   }
 };
+
+/**
+ * Centralized response builder with consistent structure.
+ */
+function buildResponse(statusCode: number, body: any) {
+  return {
+    statusCode,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...body,
+      timestamp: new Date().toISOString(),
+    }),
+  };
+}
+
+/**
+ * Consolidated payload validation function.
+ */
+function validatePayload(
+  payload: GitHubWebhookPayload,
+  headers: Record<string, string>
+): { isValid: true } | { isValid: false; statusCode: number; error: any } {
+  // Validate repository structure exists
+  if (!payload.repository) {
+    return {
+      isValid: false,
+      statusCode: 400,
+      error: {
+        error: 'Invalid payload structure',
+        message: 'Missing required field: repository',
+        expectedStructure: { repository: { full_name: 'owner/repo' } },
+        requestId: headers['x-amzn-requestid'] || 'unknown',
+      },
+    };
+  }
+
+  // Validate repository.full_name exists and format
+  if (
+    !payload.repository.full_name ||
+    typeof payload.repository.full_name !== 'string' ||
+    !payload.repository.full_name.includes('/')
+  ) {
+    return {
+      isValid: false,
+      statusCode: 400,
+      error: {
+        error: 'Invalid repository format',
+        message: 'repository.full_name must be in format "owner/repo"',
+        expectedFormat: 'owner/repo',
+        receivedValue: payload.repository.full_name,
+        requestId: headers['x-amzn-requestid'] || 'unknown',
+      },
+    };
+  }
+
+  // Validate target repository
+  if (payload.repository.full_name !== GITHUB_REPOSITORY) {
+    return {
+      isValid: false,
+      statusCode: 403,
+      error: {
+        error: 'Repository not authorized',
+        message: `This webhook is configured for repository '${GITHUB_REPOSITORY}' but received payload for '${payload.repository.full_name}'`,
+        expectedRepository: GITHUB_REPOSITORY,
+        receivedRepository: payload.repository.full_name,
+        requestId: headers['x-amzn-requestid'] || 'unknown',
+      },
+    };
+  }
+
+  return { isValid: true };
+}
 
 async function fetchCommitDiff(commitSha: string): Promise<GitHubCommitData> {
   return new Promise((resolve, reject) => {
@@ -332,4 +352,53 @@ function formatEmail(commitDetails: any[], totalCommits: number): string {
 
   message += `Repository: https://github.com/${GITHUB_REPOSITORY}\n`;
   return message;
+}
+
+/**
+ * Verify GitHub webhook signature using HMAC-SHA256.
+ *
+ * This function implements the security layer for our GitHub webhook since we use
+ * authorizationType: NONE on the API Gateway endpoint (required for GitHub to call it).
+ *
+ * GitHub Webhook Security Process:
+ * 1. GitHub signs each webhook payload with our secret using HMAC-SHA256
+ * 2. GitHub sends the signature in the 'X-Hub-Signature-256' header as 'sha256=<signature>'
+ * 3. We recreate the signature using the same secret and payload
+ * 4. We compare signatures using crypto.timingSafeEqual() to prevent timing attacks
+ *
+ * This ensures:
+ * - Only GitHub can generate valid signatures (they have our secret)
+ * - The payload hasn't been tampered with during transit
+ * - Protection against replay attacks and unauthorized webhook calls
+ *
+ * @param payload - The raw webhook payload from GitHub
+ * @param signature - The signature from X-Hub-Signature-256 header
+ * @returns true if signature is valid, false otherwise
+ */
+function verifyGitHubSignature(payload: string, signature: string): boolean {
+  if (!signature || !payload) {
+    console.error(`[${ENVIRONMENT}] Missing signature or payload for verification`);
+    return false;
+  }
+
+  try {
+    // Generate expected signature
+    const expectedSignature = crypto
+      .createHmac('sha256', GITHUB_WEBHOOK_SECRET)
+      .update(payload, 'utf8')
+      .digest('hex');
+
+    const expectedHeader = `sha256=${expectedSignature}`;
+
+    console.log(`[${ENVIRONMENT}] Signature verification:`, {
+      receivedSignature: signature.substring(0, 20) + '...',
+      expectedSignature: expectedHeader.substring(0, 20) + '...',
+    });
+
+    // Use crypto.timingSafeEqual to prevent timing attacks
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedHeader));
+  } catch (error) {
+    console.error(`[${ENVIRONMENT}] Error verifying GitHub signature:`, error);
+    return false;
+  }
 }

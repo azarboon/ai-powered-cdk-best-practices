@@ -42,6 +42,14 @@
       }
     }
   },
-  "allowedTools": ["fs_read", "@git"],
+  "allowedTools": [
+    "fs_read",
+    "@git",
+    "aws___read_documentation",
+    "aws___search_documentation",
+    "CDKGeneralGuidance",
+    "call_aws",
+    "GetAwsSolutionsConstructPattern"
+  ],
   "useLegacyMcpJson": true
 }

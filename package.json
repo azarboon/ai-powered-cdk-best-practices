@@ -39,6 +39,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.0.0",
+    "@aws-solutions-constructs/aws-apigateway-lambda": "^2.90.4",
+    "@aws-solutions-constructs/aws-lambda-sns": "^2.90.4",
     "aws-cdk-lib": "^2.206.0",
     "constructs": "^10.0.0"
   }

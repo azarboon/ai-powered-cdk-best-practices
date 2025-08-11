@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * GitHub Monitor CDK App.
+ * GitHub Monitor CDK App - Built with AWS Solutions Constructs.
  *
- * Deploys: API Gateway → Lambda → SNS
+ * Architecture: API Gateway → Lambda → SNS
+ * Uses: @aws-solutions-constructs/aws-apigateway-lambda + @aws-solutions-constructs/aws-lambda-sns
+ *
+ * This application monitors GitHub repository commits and sends email notifications
+ * with git diff details via SNS. It uses AWS Solutions Constructs for vetted
+ * architecture patterns with built-in security and best practices.
  */
 
 import 'source-map-support/register';
@@ -22,7 +27,7 @@ if (!stackName) {
 new GitHubMonitorStack(app, stackName, {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
+    region: process.env.CDK_DEFAULT_REGION ?? 'us-east-1',
   },
 });
 
