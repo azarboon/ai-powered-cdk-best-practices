@@ -56,11 +56,28 @@ export class GitHubMonitorStack extends cdk.Stack {
         code: lambda.Code.fromAsset('lambda'),
         timeout: cdk.Duration.seconds(15),
         memorySize: 512,
+        // Add AWS Lambda Powertools layer
+        layers: [
+          lambda.LayerVersion.fromLayerVersionArn(
+            this,
+            'PowertoolsLayer',
+            `arn:aws:lambda:${cdk.Aws.REGION}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:32`
+          ),
+        ],
         environment: {
           GITHUB_REPOSITORY: githubRepository,
           ENVIRONMENT: environment,
           GITHUB_WEBHOOK_SECRET: webhookSecret,
+          // Lambda Powertools environment variables
+          POWERTOOLS_SERVICE_NAME: 'github-webhook-processor',
+          POWERTOOLS_LOG_LEVEL: environment === 'prod' ? 'INFO' : 'DEBUG',
+          POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${environment}`,
+          POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
+          POWERTOOLS_LOGGER_LOG_EVENT: 'true',
+          POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
+          POWERTOOLS_TRACER_CAPTURE_ERROR: 'true',
         },
+        tracing: lambda.Tracing.ACTIVE, // Enable X-Ray tracing for Powertools
       },
       apiGatewayProps: {
         restApiName: `${stackName}-api`,

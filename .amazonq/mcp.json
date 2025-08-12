@@ -40,16 +40,33 @@
       "env": {
         "FASTMCP_LOG_LEVEL": "DEBUG"
       }
+    },
+    "awslabs.lambda-tool-mcp-server": {
+      "command": "uvx",
+      "args": ["awslabs.lambda-tool-mcp-server@latest"],
+      "env": {
+        "AWS_PROFILE": "default",
+        "AWS_REGION": "us-east-1"
+      }
     }
   },
+  "tools": [
+    "fs_read",
+    "@git",
+    "@aws-knowledge-mcp-serve/aws___read_documentation",
+    "@aws-knowledge-mcp-server/aws___search_documentation",
+    "@awslabs.cdk-mcp-server/CDKGeneralGuidance",
+    "@awslabs.aws-api-mcp-server/call_aws",
+    "@awslabs.cdk-mcp-server/GetAwsSolutionsConstructPattern"
+  ],
   "allowedTools": [
     "fs_read",
     "@git",
-    "aws___read_documentation",
-    "aws___search_documentation",
-    "CDKGeneralGuidance",
-    "call_aws",
-    "GetAwsSolutionsConstructPattern"
+    "@aws-knowledge-mcp-serve/aws___read_documentation",
+    "@aws-knowledge-mcp-server/aws___search_documentation",
+    "@awslabs.cdk-mcp-server/CDKGeneralGuidance",
+    "@awslabs.aws-api-mcp-server/call_aws",
+    "@awslabs.cdk-mcp-server/GetAwsSolutionsConstructPattern"
   ],
   "useLegacyMcpJson": true
 }

@@ -15,13 +15,16 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 
 ## Warning
 
-**Security Note:** [Context poisoning](https://martinfowler.com/articles/exploring-gen-ai/software-supply-chain-attack-surface.html) is a major risk when using coding assistants. Always review and validate external contexts and project rules before adopting them.
-
-Due to the unpredictable behavior of Amazon Q CLI, there have been instances of unintended commits or bloated logic. I continuously address and correct these issues as they arise. Contributions and pull requests are welcome.
+- [Context poisoning](https://martinfowler.com/articles/exploring-gen-ai/software-supply-chain-attack-surface.html) is a major risk when using coding assistants. Always review and validate external contexts and project rules before adopting them.
+- Due to the unpredictable behavior of Amazon Q CLI, there have been instances of unintended commits or bloated logic. I continuously address and correct these issues as they arise. Contributions and pull requests are welcome.
 
 ## TODO
 
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
+
+<!--
+Use Middy for lambda then
+optimize and minimize the code in lambda\processor.ts
 
 create an event for integration test
 validate the data flow and write units
@@ -45,6 +48,7 @@ Do these to optimize lambda\processor.ts
 12. **Convert hardcoded `"GitHub-Monitor"` to use `CDK_STACK_NAME` env var**
 13. Put all logics for validating the payload into its own function and call it "payloadChecker"
 
+-->
 <!-- address wherver there is @azarboon in the code -->
 
 <!-- ask chatgpt how to optimize ts compliation process both in ts settings, package.json as well as deploy.sh........in cdk.json file, app section: use precompiled JS (node lib/app.js) instead of ts-node for faster, reliable CDK deploys with explicit tsc control. -->

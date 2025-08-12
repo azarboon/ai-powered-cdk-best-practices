@@ -7,6 +7,12 @@
 
 **These rules must be changed only by a human. Do not modify them automatically.**
 
+### Decision-Making Protocol
+
+- Whenever there are more than one possible approaches to solve an issue, never make any changes before presenting all available options to me. This applies even if I have previously given you permission to proceed automatically.
+- Always present each viable option clearly, explain the pros and cons, and state your recommendation. Do not implement or act on any option without my explicit approval at that moment.
+- This process must be followed on every occasion, regardless of any prior standing permission to act.
+
 ### IAM Policy Resource Rules
 
 **All IAM policies must follow least-privilege principles and use fully qualified ARNs whenever possible.**
