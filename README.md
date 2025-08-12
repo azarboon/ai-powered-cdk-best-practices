@@ -273,36 +273,11 @@ uvx --from 'mcp-server-aws-api' mcp-server-aws-api
 uvx --from 'awslabs.cdk-mcp-server' awslabs.cdk-mcp-server
 ```
 
-#### Runtime Setup (Before Each Q CLI Session)
+#### Using MCP Servers
 
-Prior to starting Amazon Q CLI, ensure the local MCP servers are running and your AWS credentials are properly configured:
-
-```bash
-# Set up AWS credentials
-aws configure
-
-# Terminal 1: Start the AWS API MCP server
-FASTMCP_LOG_LEVEL=DEBUG AWS_REGION=us-east-1 uvx awslabs.aws-api-mcp-server@latest
-
-# Terminal 2: Start the AWS CDK MCP server
-FASTMCP_LOG_LEVEL=DEBUG uvx awslabs.cdk-mcp-server@latest
-```
-
-To verify that MCP servers are active, you run:
-
-```
-ps aux | grep "aws-api-mcp-server"
-
-ps aux | grep "cdk-mcp-server"
-
-
-```
-
-Start Amazon Q CLI in a third terminal:
+As of Amazon Q CLI version 1.13.2, running `q` in the project directory automatically starts and connects to MCP servers—no separate local server processes are required. However, the integration between Amazon Q CLI and MCP servers can be fragile and version-dependent. It is recommended to use the latest versions of both Amazon Q CLI and MCP servers. To verify proper integration, explicitly instruct Amazon Q CLI to test its connectivity with the MCP servers. For example, you can use the following prompt:
 
 `q chat > "test integration with all configured mcp servers"`
-
-**Note:** At the time of writing, local MCP servers—particularly the AWS API MCP Server—may show unstable behavior in WSL2 environment. To confirm MCP server usage, explicitly ask Amazon Q within the session to verify MCP integration status.
 
 ## Testing
 
