@@ -26,8 +26,9 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 Use Middy for lambda then
 optimize and minimize the code in lambda\processor.ts
 
-create an event for integration test
+check and re-evaluate all existing nag suppressions..
 validate the data flow and write units
+
 
 Do these to optimize lambda\processor.ts
 
@@ -192,15 +193,15 @@ All configuration is managed through environment variables (no hardcoded values)
 5. **SNS Publishing** → Lambda formats email content and publishes to SNS topic
 6. **Email Delivery** → SNS delivers formatted commit notifications to email subscriber
 
-## 🔒 Security Features
+## best practices I've implemented in this project:
 
 - This project follows [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md) rule pack through AWS CDK Nag check.
+- Pritotizing to use CDK L3 constructs where deem fit
 - API Gateway logs metadata for both requests and responses. @azarboon: validate this
-- API Gateway performs schema validation on webhook payloads.
-
-## 💰 FinOps practices
-
-- **Resource Tagging**: All resources tagged for cost tracking
+- Defense in depth: API Gateway performs a light schema validation on webhook payloads. @azarboon: re-implement this. Lambda function performs a deeper input validation
+- Using AWS Lambda powertools (using Lambda Layers) and their features for loging, tracing and metric
+- Using Middy middleware to reduce lines of code in Lambda processor
+- All resources tagged for cost tracking. @azarboon: make this more comprehensive
 
 ## 🗂️ Project Structure
 

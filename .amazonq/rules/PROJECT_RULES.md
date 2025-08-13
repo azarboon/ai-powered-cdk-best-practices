@@ -12,6 +12,26 @@
 - Whenever there are more than one possible approaches to solve an issue, never make any changes before presenting all available options to me. This applies even if I have previously given you permission to proceed automatically.
 - Always present each viable option clearly, explain the pros and cons, and state your recommendation. Do not implement or act on any option without my explicit approval at that moment.
 - This process must be followed on every occasion, regardless of any prior standing permission to act.
+- Especially after troubleshooting any issue, you must never proceed with a solution on your own. You must present me with all viable options, including pros and cons, and I will choose the approach. Only after I decide will you proceed with implementation. Repeat this process for every troubleshooting case.
+
+### Lambda functions, Lambda Powertools and Middy rules
+
+- In ALL Lambda functions, implement all error handling, logging, tracing, input validation, and input parsing using **AWS Lambda Powertools** utilities, integrated via the **Middy** middleware. This enforces consistent best-practice instrumentation, standardized validation and parsing, and centralized handling of cross-cutting concerns.
+- Resolve the Powertools dependency using the official **Lambda Layers** to ensure consistent versioning, reduced deployment package size, and simplified dependency management across multiple functions.
+- When chaining Powertools middlewares in Middy, order them as: Tracer → Logger → others (e.g., Metrics). This ensures tracing covers the full invocation and the original event is logged before any modification.
+- If a middleware ends execution early (short-circuits), ensure Powertools cleanup still runs before returning so traces are properly closed and metrics are emitted. If you bypass the normal middleware flow, invoke the appropriate cleanup for each utility explicitly (for example, via the documented cleanup helper).
+
+### Avoid using unstable features in any part of the code
+
+Do not use experimental, alpha, beta, preview, or otherwise unstable features in AWS CDK, Node.js, JavaScript, or TypeScript code. This applies to any API, module, construct, or language feature not marked as stable in official documentation.
+
+Specifically, **do not** use:
+
+- CDK modules or constructs with the `@aws-cdk/aws-...-alpha` or `@aws-cdk/aws-...-experimental` scope, or any construct labeled _Experimental_ in docs.
+- TypeScript experimental features, such as decorators (`experimentalDecorators`), metadata reflection (`emitDecoratorMetadata`), or features requiring unstable compiler flags.
+- Node.js or JavaScript experimental APIs (e.g., anything requiring `--experimental-*` runtime flags).
+
+Always select stable, production-ready APIs and language features to ensure maintainability, forward compatibility, and predictable behavior. If an unstable feature appears to solve a problem, pause and present stable alternatives before proceeding.
 
 ### IAM Policy Resource Rules
 

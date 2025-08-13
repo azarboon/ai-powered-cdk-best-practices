@@ -42,7 +42,17 @@
     "@aws-sdk/client-sns": "^3.0.0",
     "@aws-solutions-constructs/aws-apigateway-lambda": "^2.90.4",
     "@aws-solutions-constructs/aws-lambda-sns": "^2.90.4",
+    "@middy/core": "^6.4.1",
+    "@middy/http-cors": "^6.4.1",
+    "@middy/http-error-handler": "^6.4.1",
+    "@middy/http-json-body-parser": "^6.4.1",
+    "@middy/http-response-serializer": "^6.4.1",
+    "@middy/input-output-logger": "^6.4.1",
+    "@middy/validator": "^6.4.1",
+    "@smithy/node-http-handler": "^3.0.0",
+    "@smithy/protocol-http": "^4.0.0",
     "aws-cdk-lib": "^2.206.0",
-    "constructs": "^10.0.0"
+    "constructs": "^10.0.0",
+    "zod": "~3.23.0"
   }
 }

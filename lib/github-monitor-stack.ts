@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
@@ -45,40 +46,54 @@ export class GitHubMonitorStack extends cdk.Stack {
       throw new Error('NOTIFICATION_EMAIL must be a valid email');
     }
 
+    // Create NodejsFunction with automatic bundling
+    const lambdaFunction = new NodejsFunction(this, 'GitHubWebhookProcessor', {
+      runtime: lambda.Runtime.NODEJS_22_X,
+      architecture: lambda.Architecture.X86_64,
+      handler: 'handler',
+      entry: 'lambda/processor.ts',
+      timeout: cdk.Duration.seconds(15),
+      memorySize: 512,
+      // Add AWS Lambda Powertools layer
+      layers: [
+        lambda.LayerVersion.fromLayerVersionArn(
+          this,
+          'PowertoolsLayer',
+          `arn:aws:lambda:${cdk.Aws.REGION}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:32`
+        ),
+      ],
+      environment: {
+        GITHUB_REPOSITORY: githubRepository,
+        ENVIRONMENT: environment,
+        GITHUB_WEBHOOK_SECRET: webhookSecret,
+        // Lambda Powertools environment variables
+        POWERTOOLS_SERVICE_NAME: 'github-webhook-processor',
+        POWERTOOLS_LOG_LEVEL: environment === 'prod' ? 'INFO' : 'DEBUG',
+        POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${environment}`,
+        POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
+        POWERTOOLS_LOGGER_LOG_EVENT: 'true',
+        POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
+        POWERTOOLS_TRACER_CAPTURE_ERROR: 'true',
+      },
+      tracing: lambda.Tracing.ACTIVE, // Enable X-Ray tracing for Powertools
+      bundling: {
+        externalModules: [
+          '@aws-lambda-powertools/logger',
+          '@aws-lambda-powertools/tracer',
+          '@aws-lambda-powertools/metrics',
+          '@aws-lambda-powertools/parser',
+        ],
+        minify: true,
+        sourceMap: false,
+        target: 'es2022',
+      },
+    });
+
     // AWS Solutions Construct: API Gateway + Lambda
     // This pattern provides secure API Gateway with Lambda integration,
     // including proper IAM roles, CloudWatch logging, and X-Ray tracing
     const apiGatewayLambda = new ApiGatewayToLambda(this, 'GitHubWebhookApi', {
-      lambdaFunctionProps: {
-        runtime: lambda.Runtime.NODEJS_22_X,
-        architecture: lambda.Architecture.X86_64,
-        handler: 'processor.handler',
-        code: lambda.Code.fromAsset('lambda'),
-        timeout: cdk.Duration.seconds(15),
-        memorySize: 512,
-        // Add AWS Lambda Powertools layer
-        layers: [
-          lambda.LayerVersion.fromLayerVersionArn(
-            this,
-            'PowertoolsLayer',
-            `arn:aws:lambda:${cdk.Aws.REGION}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:32`
-          ),
-        ],
-        environment: {
-          GITHUB_REPOSITORY: githubRepository,
-          ENVIRONMENT: environment,
-          GITHUB_WEBHOOK_SECRET: webhookSecret,
-          // Lambda Powertools environment variables
-          POWERTOOLS_SERVICE_NAME: 'github-webhook-processor',
-          POWERTOOLS_LOG_LEVEL: environment === 'prod' ? 'INFO' : 'DEBUG',
-          POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${environment}`,
-          POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
-          POWERTOOLS_LOGGER_LOG_EVENT: 'true',
-          POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
-          POWERTOOLS_TRACER_CAPTURE_ERROR: 'true',
-        },
-        tracing: lambda.Tracing.ACTIVE, // Enable X-Ray tracing for Powertools
-      },
+      existingLambdaObj: lambdaFunction,
       apiGatewayProps: {
         restApiName: `${stackName}-api`,
         description: `${stackName} webhook receiver`,
@@ -99,7 +114,7 @@ export class GitHubMonitorStack extends cdk.Stack {
     // AWS Solutions Construct: Lambda + SNS
     // This pattern provides secure SNS topic with encryption and proper IAM permissions
     const lambdaSns = new LambdaToSns(this, 'GitHubNotification', {
-      existingLambdaObj: apiGatewayLambda.lambdaFunction, // Reuse Lambda from API Gateway pattern
+      existingLambdaObj: lambdaFunction, // Use the NodejsFunction we created
       topicProps: {
         topicName: `${stackName}-sns-topic`,
         displayName: `${stackName} Push Notifications`,
@@ -114,7 +129,7 @@ export class GitHubMonitorStack extends cdk.Stack {
     );
 
     // Update Lambda environment with SNS topic ARN (automatically set by LambdaToSns)
-    apiGatewayLambda.lambdaFunction.addEnvironment('SNS_TOPIC_ARN', lambdaSns.snsTopic.topicArn);
+    lambdaFunction.addEnvironment('SNS_TOPIC_ARN', lambdaSns.snsTopic.topicArn);
 
     /*
      * GitHub Webhook Authentication Strategy:
@@ -138,14 +153,22 @@ export class GitHubMonitorStack extends cdk.Stack {
      * - Prevents replay attacks and unauthorized webhook calls
      */
     const webhook = apiGatewayLambda.apiGateway.root.addResource('webhook');
-    webhook.addMethod('POST', new apigateway.LambdaIntegration(apiGatewayLambda.lambdaFunction), {
+    webhook.addMethod('POST', new apigateway.LambdaIntegration(lambdaFunction), {
       authorizationType: apigateway.AuthorizationType.NONE, // Required for GitHub webhooks - see comments above
     });
 
     // Suppress CDK Nag warnings for AWS Solutions Constructs defaults
     NagSuppressions.addResourceSuppressions(
-      apiGatewayLambda.lambdaFunction.role!,
+      lambdaFunction.role!,
       [
+        {
+          id: 'AwsSolutions-IAM4',
+          reason:
+            'NodejsFunction construct uses AWSLambdaBasicExecutionRole managed policy for CloudWatch logs access. This is the standard AWS pattern for Lambda functions.',
+          appliesTo: [
+            'Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+          ],
+        },
         {
           id: 'AwsSolutions-IAM5',
           reason:
@@ -239,7 +262,7 @@ AwsSolutions-APIG4 and AwsSolutions-COG4 (no auth) are conditionally acceptable 
     });
 
     new cdk.CfnOutput(this, 'LambdaFunctionName', {
-      value: apiGatewayLambda.lambdaFunction.functionName,
+      value: lambdaFunction.functionName,
       description: `${stackName} Lambda Function Name`,
     });
   }
