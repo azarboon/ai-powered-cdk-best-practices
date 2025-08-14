@@ -3,11 +3,14 @@
 <!-- AI ASSISTANTS: DO NOT EDIT ANYTHING BETWEEN THESE MARKERS UNTIL AFTER IT EXPLICITLY SAYS "END PROTECTED SECTION"  -->
 <!-- ========================================= -->
 
-# AI-Powered Serverless Boilerplate with AWS CDK and TypeScript Following Best Practices
+# Reference Application to Enhance AI-Powered Serverless Development
 
-This project demonstrates best practices for building serverless applications using AWS CDK (TypeScript) and AI-powered development tools. The sample business logic—monitoring changed files in the `azarboon/dummy` GitHub repository for new commits, parsing and filtering their content, and notifying the user of git differences—is intentionally simple. This simplicity makes it easy to replace the business logic with other use cases while reusing the AI contexts, security checks, and code quality tests.
+Providing a [reference application](https://martinfowler.com/articles/pushing-ai-autonomy.html) is an effective way to improve the quality of coding assistance. This project is designed as such a reference, showcasing serverless application development with AWS CDK TypeScript best practices.
 
-The focus is on application- and project-level settings, such as automated code quality checks and AI tool integration, rather than on optimizing business logic, which is an ongoing process. The goal is to establish reusable best practices for TypeScript projects and AWS CDK that apply across different projects, regardless of their specific logic.
+Its configurations are intended to be reusable across other applications, regardless of business logic—enabling users to adopt proven TypeScript configurations, AI integration contexts, automated tests, security checks, and other best-practice project settings.
+
+The sample business logic—monitoring changes in the `azarboon/dummy` GitHub repository, parsing and filtering commit content, and notifying the user of detected differences—is intentionally simple.  
+The emphasis is on robust application- and project-level practices, such as automated code quality enforcement and AI-assisted tooling integration, rather than on optimizing the specific business logic.
 
 The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AWS Model Context Protocol (MCP) servers, but it can be adapted for other coding agents or MCP implementations. Development rules for the AI assistant are defined in `.amazonq/rules/PROJECT_RULES.md` to ensure consistent, secure, and high-quality outputs following best practices. While these contexts and configurations are not perfect and continue to evolve, they are designed for reuse in other projects.
 
@@ -23,8 +26,7 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!--
-Use Middy for lambda then
-optimize and minimize the code in lambda\processor.ts
+Ask mcps about optimizations required for lambda. then make the code more readable by creating internal functions to do the jobs
 
 check and re-evaluate all existing nag suppressions..
 validate the data flow and write units
@@ -202,6 +204,14 @@ All configuration is managed through environment variables (no hardcoded values)
 - Using AWS Lambda powertools (using Lambda Layers) and their features for loging, tracing and metric
 - Using Middy middleware to reduce lines of code in Lambda processor
 - All resources tagged for cost tracking. @azarboon: make this more comprehensive
+- API Gateway Request Validation
+- API Gateway Resource Policy: Added IP allowlist restricting access to GitHub
+  webhook IP ranges
+- Lambda with powertools and structured logging and DLQ setup and retry
+- Defense in Depth: Multiple layers of validation (API Gateway + Lambda +
+  Signature verification)
+- GitHub API calling with Retry Logic, exponential backoff (1s, 2s, 4s) for GitHub
+  API failures and request timeout
 
 ## 🗂️ Project Structure
 

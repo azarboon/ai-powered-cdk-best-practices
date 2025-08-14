@@ -14,6 +14,14 @@
 - This process must be followed on every occasion, regardless of any prior standing permission to act.
 - Especially after troubleshooting any issue, you must never proceed with a solution on your own. You must present me with all viable options, including pros and cons, and I will choose the approach. Only after I decide will you proceed with implementation. Repeat this process for every troubleshooting case.
 
+## Error Handling Rule
+
+When I provide you with an error message, you must **not** attempt to fix it or take any autonomous action immediately.
+
+1. **Present Options First** – Provide me with multiple possible solutions to address the error.
+2. **Await Explicit Choice** – Do not proceed until I have selected one of the options and explicitly granted permission.
+3. **Repeat for Every Error** – This process must be followed for each new error message I provide.
+
 ### Lambda functions, Lambda Powertools and Middy rules
 
 - In ALL Lambda functions, implement all error handling, logging, tracing, input validation, and input parsing using **AWS Lambda Powertools** utilities, integrated via the **Middy** middleware. This enforces consistent best-practice instrumentation, standardized validation and parsing, and centralized handling of cross-cutting concerns.
