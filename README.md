@@ -5,7 +5,7 @@
 
 # Reference Application to Enhance AI-Powered Serverless Development
 
-Providing a [reference application](https://martinfowler.com/articles/pushing-ai-autonomy.html) is an effective way to improve the quality of coding assistance. This project is designed as such a reference, showcasing serverless application development with AWS CDK TypeScript best practices.
+Providing a [reference application](https://martinfowler.com/articles/pushing-ai-autonomy.html) is an effective way to enhance the quality of coding assistance. This project is designed to serve as such a reference, demonstrating best practices for developing serverless applications with AWS CDK in TypeScript. Reference applications are particularly important given that AWS CDK documentation and its sample projects can become outdated. For instance, at the time of writing, the official CDK documentation offers only [one example](https://github.com/cdklabs/aws-cdk-testing-examples/) for testing CDK applications, which was last maintained more than two years ago and still uses AWS CDK v1. This project aims to address these gaps by providing an up-to-date, practical resource.
 
 Its configurations are intended to be reusable across other applications, regardless of business logic—enabling users to adopt proven TypeScript configurations, AI integration contexts, automated tests, security checks, and other best-practice project settings.
 

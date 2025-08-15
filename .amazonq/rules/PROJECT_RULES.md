@@ -189,6 +189,20 @@ They MUST only declare AWS resources and MUST NOT perform deployments, API calls
 
 **These rules MUST be strictly followed throughout the entire project. Any violation MUST be corrected before code is merged.**
 
+# Rules for Writing and Modifying CDK Tests
+
+- Write tests with clear, behavior-focused names that state exactly what is being verified. Each test must cover one behavior only; if that behavior breaks, exactly one test should fail, and the test name should make the failure obvious. Do not copy-paste common assertions; extract shared checks into fixtures or helper functions.
+
+- Prefer fine-grained, targeted assertions using the CDK assertions library rather than hand-rolled JSON checks. Use `Template.fromStack` with `resourceCountIs`, `hasResource`, and `hasResourceProperties`, and use `Match.*` (such as `Match.objectLike`, `Match.stringLikeRegexp`, `Match.absent`) to avoid brittle equality checks. Assert on resource types and key properties, not on logical IDs, asset hashes, parameter names, asset paths, or resource ordering.
+
+- Keep tests deterministic. Pin all context lookups (for example, by committing `cdk.context.json` or setting explicit context in `cdk.json`) so synth results do not flap. Avoid assertions that depend on timestamps, random values, or environment-specific configuration unless those values are controlled in the test.
+
+- Use the assertions API for template annotations when validating warnings or errors, for example `Annotations.fromStack(stack).hasWarning(...)` or `hasError(...)`, rather than parsing synthesized output manually.
+
+- Do not couple tests to construct implementation details. Assert the resulting CloudFormation behavior (resource types and properties) rather than internal L2/L3 specifics that may change across CDK versions.
+
+- Use snapshot tests only when explicitly instructed. If snapshots are allowed for a case, keep them minimal and focused on stable fragments—never entire templates—and prefer matcher-based assertions first.
+
 # 🛡️ AWS CDK Nag Policy Rules
 
 **Required Rule Packs**  

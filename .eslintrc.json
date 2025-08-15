@@ -29,6 +29,19 @@
         "unused-imports/no-unused-imports": "error",
         "unused-imports/no-unused-vars": ["error"]
       }
+    },
+    {
+      "files": ["test/**/*.ts"],
+      "env": {
+        "jest": true
+      },
+      "parser": "@typescript-eslint/parser",
+      "plugins": ["@typescript-eslint", "unused-imports"],
+      "rules": {
+        "no-unused-vars": ["error"],
+        "unused-imports/no-unused-imports": "error",
+        "unused-imports/no-unused-vars": ["error"]
+      }
     }
   ]
 }

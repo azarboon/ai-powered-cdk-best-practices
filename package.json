@@ -8,6 +8,9 @@
   "scripts": {
     "build": "tsc",
     "build:check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "deploy": "dotenv -e .env -- cdk deploy",
     "synth": "dotenv -e .env -- cdk synth --fail",
     "synth:out": "dotenv -e .env -- cdk synth --output cdk.out --fail",
@@ -19,12 +22,13 @@
     "format:check": "prettier --check .",
     "security:check": "npm audit --audit-level=low",
     "security:fix": "npm audit fix --force",
-    "check": "npm run security:check && npm run format:check && npm run lint:check && npm run build:check && npm run synth",
-    "clean": "rm -rf cdk.out .tsbuildinfo dist node_modules",
+    "check": "npm run security:check && npm run format:check && npm run lint:check && npm run build:check && npm run test && npm run synth",
+    "clean": "rm -rf cdk.out .tsbuildinfo dist node_modules coverage",
     "prepare": "husky install"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
+    "@types/jest": "^29.5.12",
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
@@ -35,7 +39,9 @@
     "eslint-plugin-jsdoc": "^48.2.0",
     "eslint-plugin-unused-imports": "^4.1.4",
     "husky": "^8.0.3",
+    "jest": "^29.7.0",
     "prettier": "^3.2.5",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.8.3"
   },
   "dependencies": {

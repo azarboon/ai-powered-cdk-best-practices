@@ -5,3 +5,5 @@ awscliv2.zip
 aws/
 .git/
 package-lock.json
+
+coverage/

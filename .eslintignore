@@ -3,6 +3,8 @@ cdk.out/
 dist/
 build/
 aws/
+coverage/
+.jest-cache/
 
 # Compiled TypeScript files
 bin/*.js
@@ -14,3 +16,6 @@ lib/*.js
 
 # eslint
 .eslintcache
+
+# Jest configuration (JavaScript file)
+jest.config.js

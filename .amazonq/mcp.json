@@ -52,17 +52,13 @@
   },
   "tools": [
     "fs_read",
-    "@git",
-    "@aws-knowledge-mcp-serve/aws___read_documentation",
-    "@aws-knowledge-mcp-server/aws___search_documentation",
+    "@aws-knowledge-mcp-server/*",
     "@awslabs.aws-api-mcp-server/call_aws",
     "@awslabs.cdk-mcp-server/*"
   ],
   "allowedTools": [
     "fs_read",
-    "@git",
-    "@aws-knowledge-mcp-serve/aws___read_documentation",
-    "@aws-knowledge-mcp-server/aws___search_documentation",
+    "@aws-knowledge-mcp-server/*",
     "@awslabs.aws-api-mcp-server/call_aws",
     "@awslabs.cdk-mcp-server/*"
   ],
