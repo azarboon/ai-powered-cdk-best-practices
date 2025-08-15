@@ -55,18 +55,16 @@
     "@git",
     "@aws-knowledge-mcp-serve/aws___read_documentation",
     "@aws-knowledge-mcp-server/aws___search_documentation",
-    "@awslabs.cdk-mcp-server/CDKGeneralGuidance",
     "@awslabs.aws-api-mcp-server/call_aws",
-    "@awslabs.cdk-mcp-server/GetAwsSolutionsConstructPattern"
+    "@awslabs.cdk-mcp-server/*"
   ],
   "allowedTools": [
     "fs_read",
     "@git",
     "@aws-knowledge-mcp-serve/aws___read_documentation",
     "@aws-knowledge-mcp-server/aws___search_documentation",
-    "@awslabs.cdk-mcp-server/CDKGeneralGuidance",
     "@awslabs.aws-api-mcp-server/call_aws",
-    "@awslabs.cdk-mcp-server/GetAwsSolutionsConstructPattern"
+    "@awslabs.cdk-mcp-server/*"
   ],
   "useLegacyMcpJson": true
 }

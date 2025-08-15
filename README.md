@@ -26,30 +26,16 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!--
-Ask mcps about optimizations required for lambda. then make the code more readable by creating internal functions to do the jobs
+You optimized cdk stack (splitted constructs, dynamic ruling etc) but didnt deploy it...deploy and fix any error. then commit
 
-check and re-evaluate all existing nag suppressions..
+• Add comprehensive JSDoc comments
+• Implement automated dependency updates
+• Add code coverage reporting
+
+then ask mcps about optimizations for the stack as well as lambda..if nothing serious comes up again, go and write unit tests while validating logic
 validate the data flow and write units
 
 
-Do these to optimize lambda\processor.ts
-
-1. **Update CDK stack to use the `aws-apigateway-lambda` Solutions Construct**
-2. **Add environment variable validation at function startup**
-3. **Implement Lambda Powertools (Logger, Tracer, Metrics)** and create a Lambda Layer for dependencies if needed
-4. **Replace all `console.log` with structured logging** (use Lambda Powertools)
-5. **Consolidate duplicate logic into reusable functions**
-   - One standardized response builder (timestamp, headers, etc.)
-   - One centralized error handler
-   - Merge the three similar repository checks into a single function
-6. **Implement proper error classification and standardized responses**
-7. **Move SNS client initialization outside the handler**
-8. **Replace `https` module with AWS SDK v3 HTTP client**
-9. **Implement connection pooling for HTTP requests**
-10. **Add retry logic with exponential backoff for GitHub API calls**
-11. **Add X-Ray tracing and implement correlation IDs**
-12. **Convert hardcoded `"GitHub-Monitor"` to use `CDK_STACK_NAME` env var**
-13. Put all logics for validating the payload into its own function and call it "payloadChecker"
 
 -->
 <!-- address wherver there is @azarboon in the code -->
@@ -207,7 +193,7 @@ All configuration is managed through environment variables (no hardcoded values)
 - API Gateway Request Validation
 - API Gateway Resource Policy: Added IP allowlist restricting access to GitHub
   webhook IP ranges
-- Lambda with powertools and structured logging and DLQ setup and retry
+- Lambda with powertools and structured logging and DLQ setup and retry @azarboon:verify dlq functionality
 - Defense in Depth: Multiple layers of validation (API Gateway + Lambda +
   Signature verification)
 - GitHub API calling with Retry Logic, exponential backoff (1s, 2s, 4s) for GitHub

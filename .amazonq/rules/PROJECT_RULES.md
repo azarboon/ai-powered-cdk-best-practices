@@ -78,6 +78,22 @@ These rules are aligned with AWS CDK official best practices and MUST be strictl
 
 ---
 
+## Create smaller and focused CDK Constructs
+
+Break large CDK stacks or CDK constructs into smaller, focused constructs to keep the main construct clean, organized, and easier to maintain. For example:
+
+```typescript
+export class MyApplicationStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    const serviceApi = new ServiceApiConstruct(this, 'ServiceApi', { ... });
+    const messaging = new MessagingConstruct(this, 'Messaging', { ... });
+    // Much cleaner and more organized
+  }
+}
+```
+
 ## CDK Construct Selection Policy
 
 1. Always use the highest-level CDK construct (L3/pattern) that meets functional, security, compliance, and cost requirements **and** is actively maintained (updated within the last 6 months, with responsive issue handling).
