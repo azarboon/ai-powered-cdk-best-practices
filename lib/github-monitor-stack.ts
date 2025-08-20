@@ -1,4 +1,4 @@
-import { Stack, StackProps, Duration, Aws, Tags, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
+import { Stack, StackProps, Duration, Aws, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
 import { Runtime, Architecture, Tracing, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -419,12 +419,6 @@ export class GitHubMonitorStack extends Stack {
       stackName,
       lambdaFunction: webhookApi.lambdaFunction,
       notificationEmail,
-    });
-
-    // Resource tagging for cost tracking and ownership
-    const tags = { Environment: environment, Project: stackName };
-    Object.entries(tags).forEach(([key, value]) => {
-      Tags.of(this).add(key, value);
     });
 
     // Stack outputs for external reference

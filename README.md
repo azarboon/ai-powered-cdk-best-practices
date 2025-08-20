@@ -14,7 +14,9 @@ The emphasis is on robust application- and project-level practices, such as auto
 
 The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AWS Model Context Protocol (MCP) servers, but it can be adapted for other coding agents or MCP implementations. Development rules for the AI assistant are defined in `.amazonq/rules/PROJECT_RULES.md` to ensure consistent, secure, and high-quality outputs following best practices. While these contexts and configurations are not perfect and continue to evolve, they are designed for reuse in other projects.
 
+<!--
 @azarboon: test by creating and changing a new file, than just README.
+-->
 
 ## Warning
 
@@ -26,16 +28,14 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!--
-You optimized cdk stack (splitted constructs, dynamic ruling etc) but didnt deploy it...deploy and fix any error. then commit
+optimize testing speed.
+
+optimize ts config using chatgpt
+seems each test synthesize its own app? its very slow...check how can you improve it
 
 • Add comprehensive JSDoc comments
 • Implement automated dependency updates
 • Add code coverage reporting
-
-then ask mcps about optimizations for the stack as well as lambda..if nothing serious comes up again, go and write unit tests while validating logic
-validate the data flow and write units
-
-
 
 -->
 <!-- address wherver there is @azarboon in the code -->
@@ -186,10 +186,10 @@ All configuration is managed through environment variables (no hardcoded values)
 - This project follows [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md) rule pack through AWS CDK Nag check.
 - Pritotizing to use CDK L3 constructs where deem fit
 - API Gateway logs metadata for both requests and responses. @azarboon: validate this
-- Defense in depth: API Gateway performs a light schema validation on webhook payloads. @azarboon: re-implement this. Lambda function performs a deeper input validation
+- Defense in depth: API Gateway performs a light schema validation on webhook payloads then Lambda performs in-depth validation
 - Using AWS Lambda powertools (using Lambda Layers) and their features for loging, tracing and metric
 - Using Middy middleware to reduce lines of code in Lambda processor
-- All resources tagged for cost tracking. @azarboon: make this more comprehensive
+- All resources tagged for cost tracking: `ENVIRONMENT`, `SERVICE`,`TEAM`, `COST_CENTER`
 - API Gateway Request Validation
 - API Gateway Resource Policy: Added IP allowlist restricting access to GitHub
   webhook IP ranges

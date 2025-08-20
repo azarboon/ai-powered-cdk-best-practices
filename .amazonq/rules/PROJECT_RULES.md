@@ -203,6 +203,10 @@ They MUST only declare AWS resources and MUST NOT perform deployments, API calls
 
 - Use snapshot tests only when explicitly instructed. If snapshots are allowed for a case, keep them minimal and focused on stable fragments—never entire templates—and prefer matcher-based assertions first.
 
+- Never remove any test unless explicitly instructed by a human.
+
+- Never alter any test unless explicitly instructed by a human.
+
 # 🛡️ AWS CDK Nag Policy Rules
 
 **Required Rule Packs**  
