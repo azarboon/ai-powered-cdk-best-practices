@@ -9,8 +9,7 @@ Providing a [reference application](https://martinfowler.com/articles/pushing-ai
 
 Its configurations are intended to be reusable across other applications, regardless of business logic—enabling users to adopt proven TypeScript configurations, AI integration contexts, automated tests, security checks, and other best-practice project settings.
 
-The sample business logic—monitoring changes in the `azarboon/dummy` GitHub repository, parsing and filtering commit content, and notifying the user of detected differences—is intentionally simple.  
-The emphasis is on robust application- and project-level practices, such as automated code quality enforcement and AI-assisted tooling integration, rather than on optimizing the specific business logic.
+The app monitors changes in a GitHub repository (configurable in `.env` file), parsing and filtering commit content, and notifying the user of detected differences. The business logic is intentionally simple. The emphasis is on robust application- and project-level practices, such as automated code quality enforcement and AI-assisted tooling integration, rather than on optimizing the specific business logic.
 
 The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AWS Model Context Protocol (MCP) servers, but it can be adapted for other coding agents or MCP implementations. Development rules for the AI assistant are defined in `.amazonq/rules/PROJECT_RULES.md` to ensure consistent, secure, and high-quality outputs following best practices. While these contexts and configurations are not perfect and continue to evolve, they are designed for reuse in other projects.
 
@@ -28,9 +27,8 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!--
-optimize testing speed.
+optimize tsc build time with chatgpt recomms (q cli is helpless). then optimize testing speed.
 
-optimize ts config using chatgpt
 seems each test synthesize its own app? its very slow...check how can you improve it
 
 • Add comprehensive JSDoc comments

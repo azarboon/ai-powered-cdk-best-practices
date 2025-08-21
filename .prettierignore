@@ -7,3 +7,4 @@ aws/
 package-lock.json
 
 coverage/
+.tsbuildinfo

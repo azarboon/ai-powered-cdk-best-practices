@@ -1,5 +1,5 @@
 {
-  "app": "npx ts-node --prefer-ts-exts bin/app.ts",
+  "app": "node bin/app.js",
   "watch": {
     "include": ["**"],
     "exclude": [
@@ -42,6 +42,11 @@
     "@aws-cdk/aws-secretsmanager:automaticRotation": true,
     "@aws-cdk/aws-servicecatalog:productVersionArnIncludesAccount": true,
     "@aws-cdk/aws-cloudformation:parseParamsAndSecretsFromSecretsManager": true,
-    "@aws-cdk/aws-stepfunctions:useCfnOutputs": true
+    "@aws-cdk/aws-stepfunctions:useCfnOutputs": true,
+    "@aws-cdk/core:target-partitions": ["aws"],
+    "@aws-cdk/aws-apigateway:usagePlanKeyOrderInsensitiveId": true,
+    "@aws-cdk/core:enableResourcePropertyConstraint": false,
+    "@aws-cdk/aws-lambda:recognizeVersionProps": true,
+    "@aws-cdk/core:bootstrapQualifier": "hnb659fds"
   }
 }

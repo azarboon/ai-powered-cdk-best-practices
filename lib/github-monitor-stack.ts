@@ -79,10 +79,12 @@ class WebhookApiConstruct extends Construct {
           '@aws-lambda-powertools/tracer',
           '@aws-lambda-powertools/metrics',
           '@aws-lambda-powertools/parser',
+          'aws-sdk', // Exclude AWS SDK v2
         ],
-        minify: true,
+        minify: false,
         sourceMap: false,
-        target: 'es2022',
+        target: 'node22',
+        forceDockerBundling: false, // Use local esbuild instead of Docker
       },
     });
 
