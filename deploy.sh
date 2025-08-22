@@ -128,29 +128,18 @@ fi
 echo ""
 
 # =============================================================================
-# STEP 4: Build + CDK Synth
+# STEP 4: CDK Synth 
 # =============================================================================
-echo "🔨 Step 4: Building and Synthesizing"
-echo "=========================================="
+echo "🔨 Step 4: Synthesizing"
+echo "========================"
 echo ""
 
-# Compile TypeScript
-# @azarboon check if this compile part can comehow be optimized.
-echo "🔧 Compiling TypeScript files..."
-if ! npm run build; then
-    echo "❌ ERROR: TypeScript compilation failed"
-    exit 1
-fi
-echo "✅ TypeScript compilation successful"
-
-# Run CDK synth (generates templates and triggers bundling once)
 echo "🔍 Synthesizing CDK app..."
 if ! npm run synth:out; then
-    echo "❌ ERROR: CDK synthesis failed"
-    exit 1
+  echo "❌ ERROR: CDK synthesis failed"
+  exit 1
 fi
 echo "✅ CDK synthesis successful"
-echo ""
 
 # =============================================================================
 # STEP 5: Deployment

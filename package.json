@@ -6,8 +6,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "build": "tsc",
-    "build:check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -22,7 +21,7 @@
     "format:check": "prettier --check .",
     "security:check": "npm audit --audit-level=low",
     "security:fix": "npm audit fix --force",
-    "check": "npm run security:check && npm run format:check && npm run lint:check && npm run build:check && npm run test && npm run synth",
+    "check": "npm run security:check && npm run format:check && npm run lint:check && npm run typecheck && npm run test && npm run synth",
     "clean": "rm -rf cdk.out .tsbuildinfo dist node_modules coverage",
     "prepare": "husky install"
   },
@@ -59,6 +58,6 @@
     "@smithy/protocol-http": "^4.0.0",
     "aws-cdk-lib": "^2.206.0",
     "constructs": "^10.0.0",
-    "zod": "~3.23.0"
+    "tsx": "^4.20.4"
   }
 }
