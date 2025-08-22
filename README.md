@@ -74,6 +74,15 @@ Husky v8.0.3 is installed via the `"prepare": "husky install"` script in `packag
 
 Git hooks are managed through files in the `.husky/` directory, rather than being embedded in `package.json`. This approach provides greater flexibility and clearer hook management.
 
+### TypeScript Compilation Model
+
+This project does not use a manual TypeScript build step. Instead, all TypeScript is **transpiled on the fly**:
+
+- The **CDK app** runs through `tsx` at synth/deploy time.
+- **Lambda code** is transpiled and bundled by **esbuild** via `NodejsFunction`. <!-- @azarboon validate this esbuild-->
+- **Tests** are transpiled by `ts-jest` during execution.
+- **Type checking** is enforced separately using `tsc --noEmit` before commit.
+
 <!-- ========================================= -->
 <!-- END PROTECTED SECTION                    -->
 <!-- ========================================= -->

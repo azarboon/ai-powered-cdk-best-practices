@@ -2,8 +2,6 @@
   "include": ["**/*.ts"],
   "exclude": ["cdk.out", "**/*.d.ts", "node_modules", "test"],
   "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "isolatedModules": true,
