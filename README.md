@@ -44,30 +44,31 @@ seems each test synthesize its own app? its very slow...check how can you improv
 
 You can update the project rules by editing the `./PROJECT_RULES.md` file.
 
-## Development Flow and Automated Checks
+## Development Workflow and Automated Checks
 
-To streamline development, a set of automated checks has been configured to run before each commit. However, it’s recommended that you manually run these checks before both committing and deploying. Use:
+- **Fast iteration**  
+  During development, the CDK app is executed with `tsx`, which transpiles TypeScript on the fly. This eliminates the need for a manual build step and keeps synth and deploy cycles fast.
 
-```bash
-npm run check
-```
+  `cdk-nag` (`AwsSolutionsChecks`) runs as an Aspect, analyzing the construct tree against AWS best-practice rules on every synth and deployment.
 
-This runs the full validation suite. The pre-commit process is powered by **Husky**, which automates these checks as part of the Git workflow. Details are outlined below.
+- **Pre-commit quality gates**  
+  Before committing, the project enforces a full validation pipeline (`npm run check`), which includes:
+  - **Type checking** (`tsc --noEmit`) to ensure type safety
+  - **Linting** (ESLint) to enforce coding standards
+  - **Formatting** (Prettier) to maintain consistent style
+  - **Security auditing** (`npm audit`) to detect vulnerable dependencies
+  - **Testing** (Jest) to validate functionality
+  - **CDK synthesis** to confirm CloudFormation templates are valid
 
-### Pre-Commit Workflow
+This setup prioritizes rapid development while guaranteeing that code passing through pre-commit and CI is type-safe, consistent, secure, and deployment-ready.
+
+The pre-commit process is powered by **Husky**, which automates these checks as part of the Git workflow. Details are outlined below.
+
+### Husky
 
 1. Running `git commit` triggers the `.husky/pre-commit` hook script.
 2. This script executes `npm run check`, which performs all necessary validations.
 3. If any check fails, the commit is blocked.
-
-### ✅ Automated Checks (`npm run check`)
-
-- **ESLint:** All TypeScript files must pass linting with zero tolerance for warnings. Configuration is defined in `.eslintrc.json`. Caching is enabled for performance.
-- **Security Audit:** `npm run audit` detects vulnerable npm dependencies. The process fails if any are found.
-- **Code Formatting:** Enforces formatting rules defined in `.prettierrc.json`.
-- **CDK Security Scan:** Performs automated security checks using **AWS CDK Nag** against rules from the [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md).
-
-### 🔧 Husky Pre-Commit Configuration
 
 Husky v8.0.3 is installed via the `"prepare": "husky install"` script in `package.json` during `npm install`. This sets Git’s `core.hooksPath` to the `.husky/` directory.
 
@@ -277,11 +278,3 @@ uvx --from 'awslabs.cdk-mcp-server' awslabs.cdk-mcp-server
 As of Amazon Q CLI version 1.13.2, running `q` in the project directory automatically starts and connects to MCP servers—no separate local server processes are required. However, the integration between Amazon Q CLI and MCP servers can be fragile and version-dependent. It is recommended to use the latest versions of both Amazon Q CLI and MCP servers. To verify proper integration, explicitly instruct Amazon Q CLI to test its connectivity with the MCP servers. For example, you can use the following prompt:
 
 `q chat > "test integration with all configured mcp servers"`
-
-## Testing
-
-### Integration Test
-
-A sample payload has been provided in `test\sample-webhook-payload.json` for integration testing. Ensure that the header `X-GitHub-Event=push` is set. Since a secret is involved, ensure that the X-Hub-Signature-256 header is set correctly. I recommend creating a sample webhook from GitHub to validate the configuration before proceeding.
-
-Additionally, there may be checks such as matching `owner/repo` with the environment variables in `.env`. Refer to the schema used by API Gateway for request validation (i.e., `requestModels` in `lib\github-monitor-stack.ts`), as well as any further validations implemented in `lambda\processor.ts`.
