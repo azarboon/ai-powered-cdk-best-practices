@@ -12,7 +12,6 @@
     "test:coverage": "jest --coverage",
     "deploy": "dotenv -e .env -- cdk deploy",
     "synth": "dotenv -e .env -- cdk synth --fail",
-    "synth:out": "dotenv -e .env -- cdk synth --output cdk.out --fail",
     "bootstrap": "dotenv -e .env -- cdk bootstrap",
     "destroy": "dotenv -e .env -- cdk destroy",
     "lint:check": "eslint . --ext .ts --max-warnings 0 --cache",

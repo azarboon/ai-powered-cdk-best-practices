@@ -128,27 +128,13 @@ fi
 echo ""
 
 # =============================================================================
-# STEP 4: CDK Synth 
+# STEP 4: Deployment
 # =============================================================================
-echo "🔨 Step 4: Synthesizing"
-echo "========================"
-echo ""
-
-echo "🔍 Synthesizing CDK app..."
-if ! npm run synth:out; then
-  echo "❌ ERROR: CDK synthesis failed"
-  exit 1
-fi
-echo "✅ CDK synthesis successful"
-
-# =============================================================================
-# STEP 5: Deployment
-# =============================================================================
-echo "🚀 Step 5: Deploying"
+echo "🚀 Step 4: Deploying"
 echo "============================================"
 echo ""
 
-if ! cdk deploy --app cdk.out --require-approval never; then
+if ! cdk deploy --require-approval never; then
     echo "❌ ERROR: CDK deployment failed"
     exit 1
 fi
@@ -158,9 +144,9 @@ echo ""
 
 
 # =============================================================================
-# STEP 6: Post-deployment Information
+# STEP 5: Post-deployment Information
 # =============================================================================
-echo "📋 Step 6: Post-deployment information..."
+echo "📋 Step 5: Post-deployment information..."
 
 # Extract webhook URL from CDK outputs
 WEBHOOK_URL=$(aws cloudformation describe-stacks \

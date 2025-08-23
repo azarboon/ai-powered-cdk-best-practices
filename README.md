@@ -27,9 +27,10 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!--
-optimize tsc build time with chatgpt recomms (q cli is helpless). then optimize testing speed.
 
-seems each test synthesize its own app? its very slow...check how can you improve it
+optimize bundling in deploy.sh...see how often does it run, why it doesnty use esbuild etc.
+
+optimize test time. seems each test synthesize its own app? its very slow...check how can you improve it
 
 • Add comprehensive JSDoc comments
 • Implement automated dependency updates
@@ -37,8 +38,6 @@ seems each test synthesize its own app? its very slow...check how can you improv
 
 -->
 <!-- address wherver there is @azarboon in the code -->
-
-<!-- ask chatgpt how to optimize ts compliation process both in ts settings, package.json as well as deploy.sh........in cdk.json file, app section: use precompiled JS (node lib/app.js) instead of ts-node for faster, reliable CDK deploys with explicit tsc control. -->
 
 ## Project rules
 
@@ -155,7 +154,7 @@ npm run deploy
 Add Webhook
 Go to: `https://github.com/azarboon/REPO_NAME/settings/hooks`
 
-- **Payload URL**: Get it from the outputs @azarboon: check whether its shown as output
+- **Payload URL**: Get it from the outputs <!-- @azarboon: check whether its shown as output -->
 - **Content type**: `application/json`
 - **Secret**: Leave empty (optional for additional security)
 - **Events**: Select "Just the push event"
@@ -183,7 +182,6 @@ All configuration is managed through environment variables (no hardcoded values)
 
 1. **GitHub Push Event** → Webhook triggers `WebhookApi`
 2. **API Gateway** → Validates JSON payload against schema, logs metada to Cloudwatch, forwards to Lambda
-   @azarboon: continue from the following
 3. **Lambda Function processor** → The lambda processor filters push events, validates repository, processes only the final commit from each push
 4. **GitHub API Calls** → Lambda processor makes HTTPS requests to fetch commit details and file diffs
 5. **SNS Publishing** → Lambda formats email content and publishes to SNS topic
@@ -193,7 +191,7 @@ All configuration is managed through environment variables (no hardcoded values)
 
 - This project follows [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md) rule pack through AWS CDK Nag check.
 - Pritotizing to use CDK L3 constructs where deem fit
-- API Gateway logs metadata for both requests and responses. @azarboon: validate this
+- API Gateway logs metadata for both requests and responses. <!-- @azarboon: validate this -->
 - Defense in depth: API Gateway performs a light schema validation on webhook payloads then Lambda performs in-depth validation
 - Using AWS Lambda powertools (using Lambda Layers) and their features for loging, tracing and metric
 - Using Middy middleware to reduce lines of code in Lambda processor
@@ -201,7 +199,7 @@ All configuration is managed through environment variables (no hardcoded values)
 - API Gateway Request Validation
 - API Gateway Resource Policy: Added IP allowlist restricting access to GitHub
   webhook IP ranges
-- Lambda with powertools and structured logging and DLQ setup and retry @azarboon:verify dlq functionality
+- Lambda with powertools and structured logging and DLQ setup and retry <!-- @azarboon:verify dlq functionality -->
 - Defense in Depth: Multiple layers of validation (API Gateway + Lambda +
   Signature verification)
 - GitHub API calling with Retry Logic, exponential backoff (1s, 2s, 4s) for GitHub
@@ -209,7 +207,9 @@ All configuration is managed through environment variables (no hardcoded values)
 
 ## 🗂️ Project Structure
 
+<!--
 @azarboon: update this to include latest cli config such as .amazonq\mcp.json
+-->
 
 ```
 ├── bin/
