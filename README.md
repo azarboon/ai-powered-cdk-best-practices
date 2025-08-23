@@ -75,10 +75,10 @@ Git hooks are managed through files in the `.husky/` directory, rather than bein
 
 ### TypeScript Compilation Model
 
-This project does not use a manual TypeScript build step. Instead, all TypeScript is **transpiled on the fly**:
+This project does not use a manual TypeScript build step. Instead, all TypeScript is transpiled on the fly:
 
 - The **CDK app** runs through `tsx` at synth/deploy time.
-- **Lambda code** is transpiled and bundled by **esbuild** via `NodejsFunction`. <!-- @azarboon validate this esbuild-->
+- **Lambda code** is transpiled and bundled by esbuild via `NodejsFunction`.
 - **Tests** are transpiled by `ts-jest` during execution.
 - **Type checking** is enforced separately using `tsc --noEmit` before commit.
 
@@ -93,23 +93,10 @@ This project does not use a manual TypeScript build step. Instead, all TypeScrip
 ## Prerequisites
 
 - **Node.js 22+** and npm
-- **Docker v27.5** (for CDK Lambda bundling)
 - **AWS CLI v2.27** configured with your credentials
 - **AWS CDK CLI v2.1021.0**
 
 For development, I use VS Code installed on Microsoft Windows 11. I mainly use the integrated **WSL2 terminal in VS Code**.
-
-Here are my settings to replicate my terminal environment.
-
-**.bashrc Key Settings**:
-
-```bash
-export NPM_CONFIG_PREFIX="$HOME/.npm-global"
-export PATH="$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
-export PATH=$(echo $PATH | tr ':' '\n' | grep -v "/mnt/c/Users/YOUR_USERNAME/AppData/Roaming/npm" | tr '\n' ':' | sed 's/:$//')
-export GIT_ASKPASS="/mnt/c/Windows/System32/cmd.exe"
-export GIT_CREDENTIAL_HELPER="wincred"
-```
 
 ## Configure AWS credentials and environment variables
 
@@ -133,8 +120,6 @@ This script will:
 - Automatically loads environment variables from `.env` file and validates them
 - Installs or updates dependencies if necessary
 - Bootstraps the CDK environment if needed
-- Builds TypeScript code
-- Validates the CDK template
 - Deploys the stack
 
 **Alternative manual deployment:**
@@ -168,14 +153,6 @@ Test the Webhook
 
 Make a commit to the repository and verify webhook delivery in GitHub settings.
 
-## 🧹 Cleanup
-
-To remove all resources and avoid ongoing costs:
-
-```bash
-cdk destroy
-```
-
 All configuration is managed through environment variables (no hardcoded values)
 
 ## **Data Flow:**
@@ -187,59 +164,18 @@ All configuration is managed through environment variables (no hardcoded values)
 5. **SNS Publishing** → Lambda formats email content and publishes to SNS topic
 6. **Email Delivery** → SNS delivers formatted commit notifications to email subscriber
 
-## best practices I've implemented in this project:
+## Best Practices Implemented
 
-- This project follows [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md) rule pack through AWS CDK Nag check.
-- Pritotizing to use CDK L3 constructs where deem fit
+- Enforced [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md) rules via CDK Nag checks.
+- Prioritized use of CDK Level 3 (L3) constructs where appropriate.
 - API Gateway logs metadata for both requests and responses. <!-- @azarboon: validate this -->
-- Defense in depth: API Gateway performs a light schema validation on webhook payloads then Lambda performs in-depth validation
-- Using AWS Lambda powertools (using Lambda Layers) and their features for loging, tracing and metric
-- Using Middy middleware to reduce lines of code in Lambda processor
-- All resources tagged for cost tracking: `ENVIRONMENT`, `SERVICE`,`TEAM`, `COST_CENTER`
-- API Gateway Request Validation
-- API Gateway Resource Policy: Added IP allowlist restricting access to GitHub
-  webhook IP ranges
-- Lambda with powertools and structured logging and DLQ setup and retry <!-- @azarboon:verify dlq functionality -->
-- Defense in Depth: Multiple layers of validation (API Gateway + Lambda +
-  Signature verification)
-- GitHub API calling with Retry Logic, exponential backoff (1s, 2s, 4s) for GitHub
-  API failures and request timeout
-
-## 🗂️ Project Structure
-
-<!--
-@azarboon: update this to include latest cli config such as .amazonq\mcp.json
--->
-
-```
-├── bin/
-│   └── app.ts                           # CDK app entry point with env var support
-├── lib/
-│   └── github-monitor-stack.ts          # CDK stack (3-service architecture)
-├── lambda/
-│   └── processor.ts                     # Single Lambda function (webhook + git diff + email)
-├── .amazonq/
-│   ├── mcp.json                       # Amazon Q CLI agent and MCP configuration
-│   └── rules/
-│       └── PROJECT_RULES.md             # Development rules and guidelines
-├── .husky/
-│   └── pre-commit                       # Git pre-commit hook for code quality
-├── .env                                 # Environment variables (gitignored)
-├── .eslintcache                         # ESLint cache for performance
-├── .eslintignore                        # ESLint ignore patterns
-├── .eslintrc.json                       # ESLint configuration for code quality
-├── .gitignore                           # Git ignore patterns
-├── .prettierignore                      # Prettier ignore patterns
-├── .prettierrc.json                     # Prettier configuration
-├── cdk.json                             # CDK configuration
-├── cdk.out/                             # CDK synthesis output (gitignored)
-├── deploy.sh                            # Automated deployment script with .env loading
-├── node_modules/                        # Dependencies (gitignored)
-├── package-lock.json                    # Dependency lock file
-├── package.json                         # Dependencies and npm scripts
-├── tsconfig.json                        # TypeScript configuration
-└── README.md                            # This file
-```
+- Defense in depth: API Gateway performs lightweight schema validation on webhook payloads, while Lambda applies deeper validation including signature verification. <!-- @azarboon:validate this -->
+- Applied an API Gateway resource policy with an IP allowlist restricting access to GitHub webhook IP ranges.
+- Leveraged AWS Lambda Powertools (via Lambda Layers) for logging, tracing, and metrics.
+- Adopted Middy middleware to reduce boilerplate in the Lambda processor.
+- Implemented FinOps tagging for cost allocation on all resources: `ENVIRONMENT`, `SERVICE`, `TEAM`, `COST_CENTER`.
+- Configured Lambda with Powertools structured logging, Dead Letter Queue (DLQ), and retry handling. <!-- @azarboon:verify dlq functionality -->
+- Implemented GitHub API retry logic with exponential backoff (1s, 2s, 4s) and request timeouts for resilience against failures. <!-- @azarboon:validate this -->
 
 ## Ensure Project Rules Are Fed into the Amazon Q Cli Developer or your Coding Agent
 
@@ -261,7 +197,7 @@ You can verify the added rules by running:
 
 > NOTE: As of this writing, AWS advises against using AWS MCP servers in production environments due to their inconsistent behavior. Specifically, the integration between the AWS MCP servers and Amazon Q CLI is currently unstable and prone to bugs, especially in the WSL2 environment on Windows 11. The functionality of the servers fluctuates with each update to Q CLI—sometimes they work correctly, while at other times they do not.
 
-The MCP server configuration is located in `.amazonq/mcp.json`. This project supports both remote and local MCP server configurations:
+The MCP server configuration is located in `.amazonq/mcp.json`.
 
 - [aws-knowledge-mcp-server](https://github.com/awslabs/mcp/tree/main/src/aws-knowledge-mcp-server) – remote MCP server
 - [awslabs.aws-api-mcp-server](https://github.com/awslabs/mcp/tree/main/src/aws-api-mcp-server) – local MCP (requires installation and manual startup)

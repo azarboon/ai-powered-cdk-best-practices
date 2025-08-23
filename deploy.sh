@@ -51,9 +51,14 @@ echo "📋 Step 1: Validating environment variables..."
 # Check required environment variables
 REQUIRED_VARS=(
     "CDK_DEFAULT_ACCOUNT"
+    "CDK_DEFAULT_REGION"
     "GITHUB_REPOSITORY" 
     "NOTIFICATION_EMAIL"
     "CDK_STACK_NAME"
+    "ENVIRONMENT"
+    "SERVICE"
+    "TEAM"
+    "COST_CENTER"
 )
 
 MISSING_VARS=()
@@ -63,11 +68,6 @@ for var in "${REQUIRED_VARS[@]}"; do
         MISSING_VARS+=("$var")
     fi
 done
-
-if [ -z "${CDK_DEFAULT_REGION:-}" ]; then
-    echo "⚠️  Warning: No region specified, defaulting to us-east-1"
-    export CDK_DEFAULT_REGION=us-east-1
-fi
 
 if [ ${#MISSING_VARS[@]} -ne 0 ]; then
     echo "❌ Error: Missing required environment variables:"
