@@ -79,7 +79,7 @@ class WebhookApiConstruct extends Construct {
           '@aws-lambda-powertools/tracer',
           '@aws-lambda-powertools/metrics',
           '@aws-lambda-powertools/parser',
-          'aws-sdk', // Exclude AWS SDK v2
+          'aws-sdk',
         ],
         minify: false,
         sourceMap: false,
@@ -96,6 +96,7 @@ class WebhookApiConstruct extends Construct {
         description: `${stackName} webhook receiver`,
         proxy: false,
         deployOptions: {
+          stageName: `${stackName}-${environment}`,
           loggingLevel: MethodLoggingLevel.INFO,
           dataTraceEnabled: true,
           metricsEnabled: true,

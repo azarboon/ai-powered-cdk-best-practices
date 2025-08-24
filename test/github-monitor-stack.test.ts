@@ -2,7 +2,83 @@ import { Template } from 'aws-cdk-lib/assertions';
 import { App, Tags } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 
+function SetEnvVars<T>(vars: Record<string, string>, fn: () => T): T {
+  const prev: Record<string, string | undefined> = {};
+  try {
+    for (const [k, v] of Object.entries(vars)) {
+      prev[k] = process.env[k];
+      process.env[k] = v;
+    }
+    return fn();
+  } finally {
+    for (const [k, v] of Object.entries(prev)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+}
+
 describe('GitHubMonitorStack', () => {
+  test('All resource names are dynamic and include stack-name', () => {
+    SetEnvVars(
+      {
+        GITHUB_REPOSITORY: 'test-owner/test-repo',
+        NOTIFICATION_EMAIL: 'test@example.com',
+        GITHUB_WEBHOOK_SECRET: 'test-secret',
+      },
+      () => {
+        const stackName = 'TestStack';
+        // const expectedPrefix = `${stackName}-`;
+
+        const app = new App();
+        const stack = new GitHubMonitorStack(app, stackName);
+        const tpl = Template.fromStack(stack).toJSON();
+
+        const resources = tpl.Resources ?? {};
+        let checked = 0;
+        const errors: string[] = [];
+        const correctResources: string[] = [];
+
+        for (const [logicalId, res] of Object.entries<any>(resources)) {
+          const props = res.Properties ?? {};
+          for (const [key, val] of Object.entries(props)) {
+            // Heuristic: keys that are exactly "Name" or end with "Name" (BucketName, TableName, etc.)
+            if (key === 'Name' || key.endsWith('Name')) {
+              if (typeof val === 'string') {
+                checked++;
+                const resourceInfo = `${res.Type} ${logicalId}: ${key}="${val}"`;
+
+                if (!val.includes(stackName)) {
+                  errors.push(`${resourceInfo} (expected to contain "${stackName}")`);
+                } else {
+                  correctResources.push(resourceInfo);
+                }
+              }
+            }
+          }
+        }
+
+        expect(checked).toBeGreaterThan(0);
+        expect(errors).toEqual([]);
+
+        console.log(`\nDynamic Naming Summary:`);
+        console.log(`- Resources checked: ${checked}`);
+        console.log(`- Resources with correct naming: ${checked - errors.length}`);
+        console.log(`- Resources with incorrect naming: ${errors.length}`);
+
+        if (correctResources.length > 0) {
+          console.log(`\n✅ Resources with correct naming:`);
+          correctResources.forEach(resource => console.log(`  ${resource}`));
+        }
+
+        if (errors.length > 0) {
+          console.log(`\n❌ Resources with incorrect naming:`);
+          errors.forEach(error => console.log(`  ${error}`));
+        }
+      }
+    );
+  });
+
   test('Lambda function uses Node.js 22 runtime', () => {
     // Set required environment variables for stack validation
     process.env.GITHUB_REPOSITORY = 'test-owner/test-repo';
