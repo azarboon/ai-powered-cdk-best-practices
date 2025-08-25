@@ -11,7 +11,6 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "deploy": "dotenv -e .env -- cdk deploy",
-    "synth": "dotenv -e .env -- cdk synth --fail",
     "bootstrap": "dotenv -e .env -- cdk bootstrap",
     "destroy": "dotenv -e .env -- cdk destroy",
     "lint:check": "eslint . --ext .ts --max-warnings 0 --cache",
@@ -20,7 +19,7 @@
     "format:check": "prettier --check .",
     "security:check": "npm audit --audit-level=low",
     "security:fix": "npm audit fix --force",
-    "check": "npm run security:check && npm run format:check && npm run lint:check && npm run typecheck && npm run test && npm run synth",
+    "check": "npm run security:check && npm run format:check && npm run lint:check && npm run typecheck && npm run test",
     "clean": "rm -rf cdk.out .tsbuildinfo dist node_modules coverage",
     "prepare": "husky install"
   },

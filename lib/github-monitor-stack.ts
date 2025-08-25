@@ -28,7 +28,6 @@ interface WebhookApiProps {
   readonly webhookSecret: string;
   readonly deadLetterQueue: Queue;
 }
-
 /**
  * Webhook API Construct - Encapsulates API Gateway + Lambda using Solutions Constructs
  */
