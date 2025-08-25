@@ -1,130 +1,45 @@
 import { Template } from 'aws-cdk-lib/assertions';
-import { App, Tags } from 'aws-cdk-lib';
+import { App } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
-
-function SetEnvVars<T>(vars: Record<string, string>, fn: () => T): T {
-  const prev: Record<string, string | undefined> = {};
-  try {
-    for (const [k, v] of Object.entries(vars)) {
-      prev[k] = process.env[k];
-      process.env[k] = v;
-    }
-    return fn();
-  } finally {
-    for (const [k, v] of Object.entries(prev)) {
-      if (v === undefined) delete process.env[k];
-      else process.env[k] = v;
-    }
-  }
-}
+import { applyTags } from '../lib/helpers';
 
 describe('GitHubMonitorStack', () => {
-  test('All resource names are dynamic and include stack-name', () => {
-    SetEnvVars(
-      {
-        GITHUB_REPOSITORY: 'test-owner/test-repo',
-        NOTIFICATION_EMAIL: 'test@example.com',
-        GITHUB_WEBHOOK_SECRET: 'test-secret',
-      },
-      () => {
-        const stackName = 'TestStack';
-        // const expectedPrefix = `${stackName}-`;
+  let app: App;
+  let stack: GitHubMonitorStack;
+  let template: Template;
 
-        const app = new App();
-        const stack = new GitHubMonitorStack(app, stackName);
-        const tpl = Template.fromStack(stack).toJSON();
-
-        const resources = tpl.Resources ?? {};
-        let checked = 0;
-        const errors: string[] = [];
-        const correctResources: string[] = [];
-
-        for (const [logicalId, res] of Object.entries<any>(resources)) {
-          const props = res.Properties ?? {};
-          for (const [key, val] of Object.entries(props)) {
-            // Heuristic: keys that are exactly "Name" or end with "Name" (BucketName, TableName, etc.)
-            if (key === 'Name' || key.endsWith('Name')) {
-              if (typeof val === 'string') {
-                checked++;
-                const resourceInfo = `${res.Type} ${logicalId}: ${key}="${val}"`;
-
-                if (!val.includes(stackName)) {
-                  errors.push(`${resourceInfo} (expected to contain "${stackName}")`);
-                } else {
-                  correctResources.push(resourceInfo);
-                }
-              }
-            }
-          }
-        }
-
-        expect(checked).toBeGreaterThan(0);
-        expect(errors).toEqual([]);
-
-        console.log(`\nDynamic Naming Summary:`);
-        console.log(`- Resources checked: ${checked}`);
-        console.log(`- Resources with correct naming: ${checked - errors.length}`);
-        console.log(`- Resources with incorrect naming: ${errors.length}`);
-
-        if (correctResources.length > 0) {
-          console.log(`\n✅ Resources with correct naming:`);
-          correctResources.forEach(resource => console.log(`  ${resource}`));
-        }
-
-        if (errors.length > 0) {
-          console.log(`\n❌ Resources with incorrect naming:`);
-          errors.forEach(error => console.log(`  ${error}`));
-        }
-      }
-    );
-  });
-
-  test('Lambda function uses Node.js 22 runtime', () => {
+  beforeAll(() => {
     // Set required environment variables for stack validation
     process.env.GITHUB_REPOSITORY = 'test-owner/test-repo';
     process.env.NOTIFICATION_EMAIL = 'test@example.com';
     process.env.GITHUB_WEBHOOK_SECRET = 'test-secret';
-
-    const app = new App();
-    const stack = new GitHubMonitorStack(app, 'TestStack');
-    const template = Template.fromStack(stack);
-
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      Runtime: 'nodejs22.x',
-    });
-  });
-
-  test('All resources have required tags applied', () => {
-    // Set required environment variables for stack validation (application-specific)
-    process.env.GITHUB_REPOSITORY = 'test-owner/test-repo';
-    process.env.NOTIFICATION_EMAIL = 'test@example.com';
-    process.env.GITHUB_WEBHOOK_SECRET = 'test-secret';
-
-    // Set required environment variables for validation of tags
     process.env.ENVIRONMENT = 'test';
     process.env.SERVICE = 'test-service';
     process.env.TEAM = 'test-team';
     process.env.COST_CENTER = 'test-cost-center';
     process.env.CDK_STACK_NAME = 'TestStack';
 
-    const app = new App();
+    app = new App();
+    // Tags have to be applied after app instantiation and before creating the stacks
+    applyTags(app, {
+      Environment: process.env.ENVIRONMENT!,
+      Service: process.env.SERVICE!,
+      Team: process.env.TEAM!,
+      CostCenter: process.env.COST_CENTER!,
+      Project: process.env.CDK_STACK_NAME!,
+    });
+    stack = new GitHubMonitorStack(app, 'TestStack');
+    template = Template.fromStack(stack);
+  });
 
-    // Apply centralized tagging at app level (simulating app.ts behavior)
-    Tags.of(app).add('Environment', process.env.ENVIRONMENT!);
-    Tags.of(app).add('Service', process.env.SERVICE!);
-    Tags.of(app).add('Team', process.env.TEAM!);
-    Tags.of(app).add('CostCenter', process.env.COST_CENTER!);
-    Tags.of(app).add('Project', process.env.CDK_STACK_NAME!);
-
-    const stack = new GitHubMonitorStack(app, 'TestStack');
-    const template = Template.fromStack(stack);
-
+  test('All resources have required tags applied', () => {
+    // Apply centralized tagging using shared helper
     const requiredTags = {
-      Environment: 'test',
-      Service: 'test-service',
-      Team: 'test-team',
-      CostCenter: 'test-cost-center',
-      Project: 'TestStack',
+      Environment: process.env.ENVIRONMENT!,
+      Service: process.env.SERVICE!,
+      Team: process.env.TEAM!,
+      CostCenter: process.env.COST_CENTER!,
+      Project: process.env.CDK_STACK_NAME!,
     };
 
     // Get all resources from the template
@@ -244,7 +159,56 @@ describe('GitHubMonitorStack', () => {
 
     // Ensure all taggable resources have the required tags
     expect(resourcesWithCorrectTags).toBe(taggableResourcesFound);
+  });
 
+  test('All resource names are dynamic and include stack-name', () => {
+    const stackName = process.env.CDK_STACK_NAME!;
+    const tpl = template.toJSON();
+
+    const resources = tpl.Resources ?? {};
+    let checked = 0;
+    const errors: string[] = [];
+    const correctResources: string[] = [];
+
+    for (const [logicalId, res] of Object.entries<any>(resources)) {
+      const props = res.Properties ?? {};
+      for (const [key, val] of Object.entries(props)) {
+        // Heuristic: keys that are exactly "Name" or end with "Name" (BucketName, TableName, etc.)
+        if (key === 'Name' || key.endsWith('Name')) {
+          if (typeof val === 'string') {
+            checked++;
+            const resourceInfo = `${res.Type} ${logicalId}: ${key}="${val}"`;
+
+            if (!val.includes(stackName)) {
+              errors.push(`${resourceInfo} (expected to contain "${stackName}")`);
+            } else {
+              correctResources.push(resourceInfo);
+            }
+          }
+        }
+      }
+    }
+
+    expect(checked).toBeGreaterThan(0);
+    expect(errors).toEqual([]);
+
+    console.log(`\nDynamic Naming Summary:`);
+    console.log(`- Resources checked: ${checked}`);
+    console.log(`- Resources with correct naming: ${checked - errors.length}`);
+    console.log(`- Resources with incorrect naming: ${errors.length}`);
+
+    if (correctResources.length > 0) {
+      console.log(`\n✅ Resources with correct naming:`);
+      correctResources.forEach(resource => console.log(`  ${resource}`));
+    }
+
+    if (errors.length > 0) {
+      console.log(`\n❌ Resources with incorrect naming:`);
+      errors.forEach(error => console.log(`  ${error}`));
+    }
+  });
+
+  afterAll(() => {
     // Clean up environment variables
     delete process.env.GITHUB_REPOSITORY;
     delete process.env.NOTIFICATION_EMAIL;

@@ -1,6 +1,6 @@
 {
   "include": ["**/*.ts"],
-  "exclude": ["cdk.out", "**/*.d.ts", "node_modules", "test"],
+  "exclude": ["cdk.out", "**/*.d.ts", "node_modules"],
   "compilerOptions": {
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,

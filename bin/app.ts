@@ -12,9 +12,10 @@
  */
 
 import 'source-map-support/register';
-import { App, Aspects, Tags } from 'aws-cdk-lib';
+import { App, Aspects } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 import { AwsSolutionsChecks } from 'cdk-nag';
+import { applyTags } from '../lib/helpers';
 
 /**
  * Validate required environment variables for deployment and tagging
@@ -33,17 +34,16 @@ validateEnvironment();
 
 const app = new App();
 
-// Get required environment variables
-const stackName = process.env.CDK_STACK_NAME!;
-
 // Apply centralized tagging to entire CDK application
-Tags.of(app).add('Environment', process.env.ENVIRONMENT!);
-Tags.of(app).add('Service', process.env.SERVICE!);
-Tags.of(app).add('Team', process.env.TEAM!);
-Tags.of(app).add('CostCenter', process.env.COST_CENTER!);
-Tags.of(app).add('Project', stackName);
+applyTags(app, {
+  Environment: process.env.ENVIRONMENT!,
+  Service: process.env.SERVICE!,
+  Team: process.env.TEAM!,
+  CostCenter: process.env.COST_CENTER!,
+  Project: process.env.CDK_STACK_NAME!,
+});
 
-new GitHubMonitorStack(app, stackName, {
+new GitHubMonitorStack(app, process.env.CDK_STACK_NAME!, {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION ?? 'us-east-1',
