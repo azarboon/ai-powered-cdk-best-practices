@@ -28,9 +28,10 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 
 <!--
 
-optimize bundling in deploy.sh...see how often does it run, why it doesnty use esbuild etc.
+optimize the logic of tests, according to comments
 
-optimize test time. seems each test synthesize its own app? its very slow...check how can you improve it
+implement these rules & tests:
+https://docs.aws.amazon.com/cdk/v2/guide/best-practices.html#best-practices-code
 
 • Add comprehensive JSDoc comments
 • Implement automated dependency updates

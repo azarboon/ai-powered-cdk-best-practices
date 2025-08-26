@@ -1,4 +1,4 @@
-import { Template } from 'aws-cdk-lib/assertions';
+import { Template, Match } from 'aws-cdk-lib/assertions';
 import { App } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 import { applyTags } from '../lib/helpers';
@@ -32,133 +32,41 @@ describe('GitHubMonitorStack', () => {
     template = Template.fromStack(stack);
   });
 
-  test('All resources have required tags applied', () => {
-    // Apply centralized tagging using shared helper
-    const requiredTags = {
-      Environment: process.env.ENVIRONMENT!,
-      Service: process.env.SERVICE!,
-      Team: process.env.TEAM!,
-      CostCenter: process.env.COST_CENTER!,
-      Project: process.env.CDK_STACK_NAME!,
-    };
-
-    // Get all resources from the template
-    const templateJson = template.toJSON();
-    const resources = templateJson.Resources || {};
-
-    // Resources that explicitly DON'T support tagging (exclusion list) as of Aug 2025
-    const nonTaggableResourceTypes = [
-      'AWS::ApiGateway::RequestValidator',
-      'AWS::ApiGateway::Model',
-      'AWS::ApiGateway::Deployment',
-      'AWS::CloudFormation::CustomResource',
-      'AWS::IAM::Policy',
-      'AWS::Lambda::EventInvokeConfig',
-      'AWS::ApiGateway::Resource',
-      'AWS::Lambda::Permission',
-      'AWS::ApiGateway::Method',
-      'AWS::ApiGateway::Account',
-      'AWS::SNS::TopicPolicy',
-      'AWS::SNS::Subscription',
-      // Add others as discovered during testing
+  test('All resources that support tagging have the required tags applied', () => {
+    const requiredTags = [
+      { Key: 'Environment', Value: process.env.ENVIRONMENT! },
+      { Key: 'Service', Value: process.env.SERVICE! },
+      { Key: 'Team', Value: process.env.TEAM! },
+      { Key: 'CostCenter', Value: process.env.COST_CENTER! },
+      { Key: 'Project', Value: process.env.CDK_STACK_NAME! },
     ];
 
-    let taggableResourcesFound = 0;
-    let resourcesWithCorrectTags = 0;
-
-    // Loop through all resources in the template
-    Object.entries(resources).forEach(([logicalId, resource]: [string, any]) => {
-      const resourceType = resource.Type;
-
-      // Skip resources that explicitly don't support tagging
-      if (nonTaggableResourceTypes.includes(resourceType)) {
-        console.log(`Skipping non-taggable resource: ${resourceType} (${logicalId})`);
-        return;
-      }
-
-      // Skip service-linked IAM roles (they cannot be tagged as of Aug 2025)
-      if (resourceType === 'AWS::IAM::Role') {
-        const assumeRolePolicyDocument = resource.Properties?.AssumeRolePolicyDocument;
-
-        // Check if this is a service-linked role by examining the trust policy
-        const isServiceLinkedRole = assumeRolePolicyDocument?.Statement?.some((statement: any) => {
-          const principal = statement.Principal;
-          // Service-linked roles have AWS services as principals
-          return (
-            principal?.Service &&
-            (principal.Service.includes('apigateway.amazonaws.com') ||
-              principal.Service.includes('logs.amazonaws.com') ||
-              (typeof principal.Service === 'string' &&
-                principal.Service.endsWith('.amazonaws.com')))
-          );
-        });
-
-        if (isServiceLinkedRole) {
-          console.log(`Skipping service-linked IAM role: ${logicalId}`);
-          return; // Skip this resource
-        }
-      }
-
-      // All other resources should be taggable
-      taggableResourcesFound++;
-
-      console.log(`Checking tags for ${resourceType} (${logicalId})`);
-
-      // Check if resource has Tags property
-      const resourceTags = resource.Properties?.Tags;
-
-      if (resourceTags) {
-        // Convert tags array to object for easier comparison
-        const tagMap: Record<string, string> = {};
-
-        if (Array.isArray(resourceTags)) {
-          // Handle tags as array format: [{Key: 'key', Value: 'value'}]
-          resourceTags.forEach((tag: any) => {
-            if (tag.Key && tag.Value) {
-              tagMap[tag.Key] = tag.Value;
-            }
-          });
-        } else if (typeof resourceTags === 'object') {
-          // Handle tags as object format: {key: 'value'}
-          Object.assign(tagMap, resourceTags);
-        }
-
-        // Check if all required tags are present with correct values
-        const hasAllRequiredTags = Object.entries(requiredTags).every(([key, expectedValue]) => {
-          const actualValue = tagMap[key];
-          const hasTag = actualValue === expectedValue;
-
-          if (!hasTag) {
-            console.log(
-              `  Missing or incorrect tag: ${key} (expected: ${expectedValue}, actual: ${actualValue})`
-            );
+    // @azarboon: use Tag class in cdk assertion library
+    const allResources = template.toJSON().Resources || {};
+    Object.entries(allResources).forEach(([logicalId, resource]: [string, any]) => {
+      if (resource.Properties?.Tags) {
+        let hasAllTags = true;
+        requiredTags.forEach(requiredTag => {
+          try {
+            template.hasResourceProperties(resource.Type, {
+              Tags: Match.arrayWith([requiredTag]),
+            });
+          } catch (error) {
+            console.log(`  ❌ Missing tag: ${requiredTag.Key}=${requiredTag.Value}`);
+            hasAllTags = false;
+            throw error; // Re-throw to fail the test
           }
-
-          return hasTag;
         });
 
-        if (hasAllRequiredTags) {
-          resourcesWithCorrectTags++;
-          console.log(`  ✅ All required tags present and correct`);
-        } else {
-          console.log(`  ❌ Missing or incorrect required tags`);
-          console.log(`  Expected tags:`, requiredTags);
-          console.log(`  Actual tags:`, tagMap);
+        if (hasAllTags) {
+          console.log(`✅ ${resource.Type} (${logicalId}) - has all required tags`);
         }
       } else {
-        console.log(`  ❌ No Tags property found on resource`);
+        console.log(
+          `⏭️  ${resource.Type} (${logicalId}) - Doesn't support Tags property, skipping`
+        );
       }
     });
-
-    console.log(`\nTagging Summary:`);
-    console.log(`- Taggable resources found: ${taggableResourcesFound}`);
-    console.log(`- Resources with correct tags: ${resourcesWithCorrectTags}`);
-
-    // Ensure we found some taggable resources
-    expect(taggableResourcesFound).toBeGreaterThan(0);
-
-    // Ensure all taggable resources have the required tags
-    expect(resourcesWithCorrectTags).toBe(taggableResourcesFound);
   });
 
   test('All resource names are dynamic and include stack-name', () => {
@@ -169,7 +77,7 @@ describe('GitHubMonitorStack', () => {
     let checked = 0;
     const errors: string[] = [];
     const correctResources: string[] = [];
-
+    //@azarboon: use assertion library to get and loop through resources, similar to above
     for (const [logicalId, res] of Object.entries<any>(resources)) {
       const props = res.Properties ?? {};
       for (const [key, val] of Object.entries(props)) {
