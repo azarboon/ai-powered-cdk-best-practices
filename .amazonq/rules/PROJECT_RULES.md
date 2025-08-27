@@ -193,7 +193,15 @@ They MUST only declare AWS resources and MUST NOT perform deployments, API calls
 
 - Write tests with clear, behavior-focused names that state exactly what is being verified. Each test must cover one behavior only; if that behavior breaks, exactly one test should fail, and the test name should make the failure obvious. Do not copy-paste common assertions; extract shared checks into fixtures or helper functions.
 
-- Prefer fine-grained, targeted assertions using the CDK assertions library rather than hand-rolled JSON checks. Use `Template.fromStack` with `resourceCountIs`, `hasResource`, and `hasResourceProperties`, and use `Match.*` (such as `Match.objectLike`, `Match.stringLikeRegexp`, `Match.absent`) to avoid brittle equality checks. Assert on resource types and key properties, not on logical IDs, asset hashes, parameter names, asset paths, or resource ordering.
+- Prefer fine-grained, targeted assertions using the CDK Assertions library rather than hand-rolled JSON checks. Use built-in features from `aws-cdk-lib/assertions` such as `Template`, `Tags` (for checking and matching tags), `Match`, `Matcher`, etc. If a built-in feature exists, use it instead of custom code.
+
+- Never run tests against internal constructs of resources; always run tests against the synthesized template.
+
+- Use `Template.fromStack` with helpers like `resourceCountIs`, `hasResource`, and `hasResourceProperties`.  
+  Combine these with `Match.*` (e.g., `Match.objectLike`, `Match.stringLikeRegexp`, `Match.absent`) to avoid brittle equality checks.  
+  Assert on resource types and key properties, not on logical IDs, asset hashes, parameter names, asset paths, or resource ordering.
+
+- Synthesize once per test file (e.g., in `beforeAll`) and reuse the `Template` to avoid redundant synths and speed up tests.
 
 - Keep tests deterministic. Pin all context lookups (for example, by committing `cdk.context.json` or setting explicit context in `cdk.json`) so synth results do not flap. Avoid assertions that depend on timestamps, random values, or environment-specific configuration unless those values are controlled in the test.
 

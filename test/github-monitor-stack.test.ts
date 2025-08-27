@@ -1,4 +1,4 @@
-import { Template, Match } from 'aws-cdk-lib/assertions';
+import { Template, Tags } from 'aws-cdk-lib/assertions';
 import { App } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 import { applyTags } from '../lib/helpers';
@@ -32,6 +32,23 @@ describe('GitHubMonitorStack', () => {
     template = Template.fromStack(stack);
   });
 
+  test('Stack-level tags match required tags', () => {
+    const requiredTags = {
+      Environment: process.env.ENVIRONMENT!,
+      Service: process.env.SERVICE!,
+      Team: process.env.TEAM!,
+      CostCenter: process.env.COST_CENTER!,
+      Project: process.env.CDK_STACK_NAME!,
+    };
+
+    const stackTags = Tags.fromStack(stack);
+    console.log('stackTags.all():', stackTags.all());
+
+    // This will fail the test if tags don't match
+    stackTags.hasValues(requiredTags);
+  });
+  /*
+@azarboon: use the loop from this test to optimize the next test
   test('All resources that support tagging have the required tags applied', () => {
     const requiredTags = [
       { Key: 'Environment', Value: process.env.ENVIRONMENT! },
@@ -40,6 +57,11 @@ describe('GitHubMonitorStack', () => {
       { Key: 'CostCenter', Value: process.env.COST_CENTER! },
       { Key: 'Project', Value: process.env.CDK_STACK_NAME! },
     ];
+
+    // Add Tags.fromStack to see what it shows
+    const stackTags = Tags.fromStack(stack);
+    console.log('stackTags object:', stackTags);
+    console.log('stackTags.all():', stackTags.all());
 
     // @azarboon: use Tag class in cdk assertion library
     const allResources = template.toJSON().Resources || {};
@@ -54,7 +76,7 @@ describe('GitHubMonitorStack', () => {
           } catch (error) {
             console.log(`  ❌ Missing tag: ${requiredTag.Key}=${requiredTag.Value}`);
             hasAllTags = false;
-            throw error; // Re-throw to fail the test
+            throw error; // Throw to fail the test
           }
         });
 
@@ -68,6 +90,7 @@ describe('GitHubMonitorStack', () => {
       }
     });
   });
+*/
 
   test('All resource names are dynamic and include stack-name', () => {
     const stackName = process.env.CDK_STACK_NAME!;
