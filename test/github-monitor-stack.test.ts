@@ -1,4 +1,4 @@
-import { Template } from 'aws-cdk-lib/assertions';
+import { Template, Tags } from 'aws-cdk-lib/assertions';
 import { App } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 import { applyTags } from '../lib/helpers';
@@ -9,7 +9,6 @@ describe('GitHubMonitorStack', () => {
   let template: Template;
 
   beforeAll(() => {
-    // Set required environment variables for stack validation
     process.env.GITHUB_REPOSITORY = 'test-owner/test-repo';
     process.env.NOTIFICATION_EMAIL = 'test@example.com';
     process.env.GITHUB_WEBHOOK_SECRET = 'test-secret';
@@ -33,6 +32,12 @@ describe('GitHubMonitorStack', () => {
   });
 
   test('All resource names are dynamic and include stack-name', () => {
+    /*
+  There is no universal "Name" property across AWS resources. This test iterates over all
+  synthesized resources and checks properties named "Name" or ending with "Name" (e.g., TableName,
+  BucketName, QueueName) to verify they are dynamic and include the stack name.
+*/
+
     const stackName = process.env.CDK_STACK_NAME!;
 
     const resources = template.toJSON().Resources;
@@ -53,70 +58,23 @@ describe('GitHubMonitorStack', () => {
         }
       }
     }
-    /*
-    test('Stack-level tags match required tags', () => {
-      const requiredTags = {
-        Environment: process.env.ENVIRONMENT!,
-        Service: process.env.SERVICE!,
-        Team: process.env.TEAM!,
-        CostCenter: process.env.COST_CENTER!,
-        Project: process.env.CDK_STACK_NAME!,
-      };
-
-      const stackTags = Tags.fromStack(stack);
-      console.log('stackTags.all():', stackTags.all());
-
-      // This will fail the test if tags don't match
-      stackTags.hasValues(requiredTags);
-    });
-    */
-    /*
-optimize following test by using chatgpt recommended approach. use flatmap instead of nested loop
-
-
-import { App } from 'aws-cdk-lib';
-import { Template } from 'aws-cdk-lib/assertions';
-import { MyStack } from '../lib/my-stack';
-
-describe('dynamic naming', () => {
-  let templateJson: any;
-  let stackName: string;
-
-  beforeAll(() => {
-    const app = new App();
-    const stack = new MyStack(app, 'TestStack');
-    stackName = stack.stackName;
-    templateJson = Template.fromStack(stack).toJSON() as any; // Assertions synth once
   });
 
-  test('all *Name properties include stack name', () => {
-    const resources: Record<string, any> = templateJson.Resources ?? {};
-    const nameKey = (k: string) => k === 'Name' || k.endsWith('Name');
+  test('Stack-level tags match required tags', () => {
+    const requiredTags = {
+      Environment: process.env.ENVIRONMENT!,
+      Service: process.env.SERVICE!,
+      Team: process.env.TEAM!,
+      CostCenter: process.env.COST_CENTER!,
+      Project: process.env.CDK_STACK_NAME!,
+    };
 
-    const nameProps = Object.entries(resources)
-      .flatMap(([logicalId, res]) =>
-        Object.entries(res?.Properties ?? {})
-          .filter(([k, v]) => nameKey(k) && typeof v === 'string')
-          .map(([k, v]) => ({ logicalId, type: res.Type, key: k, value: v as string }))
-      );
-
-    expect(nameProps.length).toBeGreaterThan(0);
-
-    const failures = nameProps
-      .filter(({ value }) => !value.includes(stackName))
-      .map(({ type, logicalId, key, value }) =>
-        `${type} ${logicalId}: ${key}="${value}" (expected to contain "${stackName}")`
-      );
-
-    expect(failures).toEqual([]); // one concise assertion
-  });
-});
-
-*/
+    const stackTags = Tags.fromStack(stack);
+    console.log('stackTags.all():', stackTags.all());
+    stackTags.hasValues(requiredTags);
   });
 
   afterAll(() => {
-    // Clean up environment variables
     delete process.env.GITHUB_REPOSITORY;
     delete process.env.NOTIFICATION_EMAIL;
     delete process.env.GITHUB_WEBHOOK_SECRET;
