@@ -3,7 +3,7 @@ import { App } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 import { applyTags } from '../lib/helpers';
 
-describe('GitHubMonitorStack', () => {
+describe('Testing stack level configurations', () => {
   let app: App;
   let stack: GitHubMonitorStack;
   let template: Template;

@@ -27,8 +27,8 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!--
-
-optimize the logic of tests, according to comments
+create a test to validate env vars
+create a unit test using Matcher that checks aws lambda against best practices
 
 implement these rules & tests:
 https://docs.aws.amazon.com/cdk/v2/guide/best-practices.html#best-practices-code

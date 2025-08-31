@@ -14,3 +14,24 @@ export function applyTags(scope: IConstruct, tags: StandardTags) {
     Tags.of(scope).add(k, v);
   }
 }
+
+export function validateEnvVars() {
+  const required = [
+    'CDK_STACK_NAME',
+    'CDK_DEFAULT_ACCOUNT',
+    'CDK_DEFAULT_REGION',
+    'GITHUB_WEBHOOK_SECRET',
+    'GITHUB_REPOSITORY',
+    'GITHUB_API_BASE',
+    'NOTIFICATION_EMAIL',
+    'ENVIRONMENT',
+    'SERVICE',
+    'TEAM',
+    'COST_CENTER',
+  ];
+
+  const missing = required.filter(key => !process.env[key]);
+  if (missing.length) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
