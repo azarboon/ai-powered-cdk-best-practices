@@ -1,5 +1,6 @@
 import { Tags } from 'aws-cdk-lib';
 import { IConstruct } from 'constructs';
+import * as dotenv from 'dotenv';
 
 export type StandardTags = {
   Environment: string;
@@ -16,22 +17,16 @@ export function applyTags(scope: IConstruct, tags: StandardTags) {
 }
 
 export function validateEnvVars() {
-  const required = [
-    'CDK_STACK_NAME',
-    'CDK_DEFAULT_ACCOUNT',
-    'CDK_DEFAULT_REGION',
-    'GITHUB_WEBHOOK_SECRET',
-    'GITHUB_REPOSITORY',
-    'GITHUB_API_BASE',
-    'NOTIFICATION_EMAIL',
-    'ENVIRONMENT',
-    'SERVICE',
-    'TEAM',
-    'COST_CENTER',
-  ];
+  const envConfig = dotenv.config({ path: '.env' });
 
-  const missing = required.filter(key => !process.env[key]);
-  if (missing.length) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  if (envConfig.error || !envConfig.parsed) {
+    throw new Error('Could not load .env file');
+  }
+
+  const requiredTags = Object.keys(envConfig.parsed);
+  const missingTags = requiredTags.filter(key => !process.env[key]);
+
+  if (missingTags.length) {
+    throw new Error(`Missing required environment variables: ${missingTags.join(', ')}`);
   }
 }
