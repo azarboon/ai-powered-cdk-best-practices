@@ -12,10 +12,10 @@ import { App, Aspects } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 import { AwsSolutionsChecks } from 'cdk-nag';
 import { applyTags, validateAllEnvVars } from '../lib/helpers';
-import { validateENVIRONMENT } from '../lib/config';
+import { validateEnvironment } from '../lib/config';
 
 validateAllEnvVars();
-validateENVIRONMENT();
+validateEnvironment();
 
 const app = new App();
 

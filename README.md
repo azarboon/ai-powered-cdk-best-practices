@@ -27,6 +27,8 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!-- implement these
+refactor so that validateEnvironment(); is called from inside validateAllEnvVars();. Then run the app and fix the bugs.
+
 you changed many things...test whether the app is still functional
 
 Aspects enforce infra-level settings on CloudFormation components during CDK synthesis, while ESLint enforces build-time rules before synthesis.

@@ -15,7 +15,7 @@ import { PolicyStatement, Effect, AnyPrincipal } from 'aws-cdk-lib/aws-iam';
 import { Queue, QueueEncryption } from 'aws-cdk-lib/aws-sqs';
 import { ApiGatewayToLambda } from '@aws-solutions-constructs/aws-apigateway-lambda';
 import { LambdaToSns } from '@aws-solutions-constructs/aws-lambda-sns';
-import { isEnvironment, PROD } from './config';
+import { isEnvironment, ENVIRONMENTS } from './config';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 
@@ -65,7 +65,7 @@ class WebhookApiConstruct extends Construct {
         ENVIRONMENT: environment,
         GITHUB_WEBHOOK_SECRET: webhookSecret,
         POWERTOOLS_SERVICE_NAME: `${stackName}-webhook-processor`,
-        POWERTOOLS_LOG_LEVEL: isEnvironment(PROD) ? 'INFO' : 'DEBUG',
+        POWERTOOLS_LOG_LEVEL: isEnvironment(ENVIRONMENTS.PROD) ? 'INFO' : 'DEBUG',
         POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${environment}`,
         POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
         POWERTOOLS_LOGGER_LOG_EVENT: 'true',
