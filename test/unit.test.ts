@@ -16,16 +16,15 @@ describe('Testing stack level configurations', () => {
     process.env.SERVICE = 'test-service';
     process.env.TEAM = 'test-team';
     process.env.COST_CENTER = 'test-cost-center';
-    process.env.CDK_STACK_NAME = 'TestStack';
+    process.env.STACK_NAME = 'TestStack';
 
     app = new App();
     // Tags have to be applied after app instantiation and before creating the stacks
     applyTags(app, {
-      Environment: process.env.ENVIRONMENT!,
-      Service: process.env.SERVICE!,
-      Team: process.env.TEAM!,
-      CostCenter: process.env.COST_CENTER!,
-      Project: process.env.CDK_STACK_NAME!,
+      ENVIRONMENT: process.env.ENVIRONMENT!,
+      SERVICE: process.env.SERVICE!,
+      TEAM: process.env.TEAM!,
+      COST_CENTER: process.env.COST_CENTER!,
     });
     stack = new GitHubMonitorStack(app, 'TestStack');
     template = Template.fromStack(stack);
@@ -38,7 +37,7 @@ describe('Testing stack level configurations', () => {
   BucketName, QueueName) to verify they are dynamic and include the stack name.
 */
 
-    const stackName = process.env.CDK_STACK_NAME!;
+    const stackName = process.env.STACK_NAME!;
 
     const resources = template.toJSON().Resources;
     // Loops through each resource in the synthesized CloudFormation template
@@ -62,11 +61,10 @@ describe('Testing stack level configurations', () => {
 
   test('Stack-level tags match required tags', () => {
     const requiredTags = {
-      Environment: process.env.ENVIRONMENT!,
-      Service: process.env.SERVICE!,
-      Team: process.env.TEAM!,
-      CostCenter: process.env.COST_CENTER!,
-      Project: process.env.CDK_STACK_NAME!,
+      ENVIRONMENT: process.env.ENVIRONMENT!,
+      SERVICE: process.env.SERVICE!,
+      TEAM: process.env.TEAM!,
+      COST_CENTER: process.env.COST_CENTER!,
     };
 
     const stackTags = Tags.fromStack(stack);
@@ -82,6 +80,6 @@ describe('Testing stack level configurations', () => {
     delete process.env.SERVICE;
     delete process.env.TEAM;
     delete process.env.COST_CENTER;
-    delete process.env.CDK_STACK_NAME;
+    delete process.env.STACK_NAME;
   });
 });

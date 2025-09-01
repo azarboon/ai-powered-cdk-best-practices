@@ -3,11 +3,10 @@ import { IConstruct } from 'constructs';
 import * as dotenv from 'dotenv';
 
 export type StandardTags = {
-  Environment: string;
-  Service: string;
-  Team: string;
-  CostCenter: string;
-  Project: string;
+  ENVIRONMENT: string;
+  SERVICE: string;
+  TEAM: string;
+  COST_CENTER: string;
 };
 
 export function applyTags(scope: IConstruct, tags: StandardTags) {
@@ -16,7 +15,7 @@ export function applyTags(scope: IConstruct, tags: StandardTags) {
   }
 }
 
-export function validateEnvVars() {
+export function validateAllEnvVars() {
   const envConfig = dotenv.config({ path: '.env' });
 
   if (envConfig.error || !envConfig.parsed) {

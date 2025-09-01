@@ -125,7 +125,7 @@ const fetchCommitDiff = async (commitSha: string): Promise<any> => {
   const url = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/commits/${commitSha}`;
   return fetchWithRetry(url, {
     headers: {
-      'User-Agent': `GitHub-Monitor/${process.env.ENVIRONMENT || 'dev'}`,
+      'User-Agent': `GitHub-Monitor/${process.env.ENVIRONMENT}`,
       Accept: 'application/vnd.github.v3+json',
     },
   });
@@ -155,7 +155,7 @@ const formatDiff = (commitData: any): string => {
 const formatEmail = (commitDetails: any, totalCommits: number): string => {
   const { id, author, message, url, diff } = commitDetails;
   let email = `New commits pushed to ${process.env.GITHUB_REPOSITORY}\n`;
-  email += `Environment: ${process.env.ENVIRONMENT || 'dev'}\n\n`;
+  email += `Environment: ${process.env.ENVIRONMENT}\n\n`;
 
   if (totalCommits > 1) email += `Total commits: ${totalCommits} (showing final commit)\n\n`;
 

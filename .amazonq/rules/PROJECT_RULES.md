@@ -115,6 +115,10 @@ export class MyApplicationStack extends cdk.Stack {
    - Integration tests that verify the actual AWS resources created.
 7. Prefer composition over inheritance. Keep construct APIs stable to allow easy swapping between L1, L2, and L3 in the future.
 
+## Do Not Hardcode Environment Name Constants
+
+Never hardcode environment names (e.g., `dev`, `test`, `prod`) anywhere in the code except in `lib/config.ts`. Each environment must be defined as a separate constant and added to the `ENVIRONMENTS` array. To reference an environment, import and use the constant (e.g., `import { PROD } from './config'`), and always refer to the constant, not a string literal.
+
 ## Naming Convention Rule – Dynamic Component Names
 
 Never hardcode component names in infrastructure code; instead, dynamically generate them by combining the stack name with a relevant suffix (e.g., {stackName}-topic for an SNS topic, {stackName}-processor for a Lambda function, or {stackName}-api for an API Gateway). This ensures consistent naming across environments, avoids resource name collisions, and supports maintainable, scalable deployments.

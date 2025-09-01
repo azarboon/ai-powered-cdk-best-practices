@@ -15,6 +15,7 @@ import { PolicyStatement, Effect, AnyPrincipal } from 'aws-cdk-lib/aws-iam';
 import { Queue, QueueEncryption } from 'aws-cdk-lib/aws-sqs';
 import { ApiGatewayToLambda } from '@aws-solutions-constructs/aws-apigateway-lambda';
 import { LambdaToSns } from '@aws-solutions-constructs/aws-lambda-sns';
+import { isEnvironment, PROD } from './config';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 
@@ -64,7 +65,7 @@ class WebhookApiConstruct extends Construct {
         ENVIRONMENT: environment,
         GITHUB_WEBHOOK_SECRET: webhookSecret,
         POWERTOOLS_SERVICE_NAME: `${stackName}-webhook-processor`,
-        POWERTOOLS_LOG_LEVEL: environment === 'prod' ? 'INFO' : 'DEBUG',
+        POWERTOOLS_LOG_LEVEL: isEnvironment(PROD) ? 'INFO' : 'DEBUG',
         POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${environment}`,
         POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
         POWERTOOLS_LOGGER_LOG_EVENT: 'true',
@@ -78,9 +79,8 @@ class WebhookApiConstruct extends Construct {
           '@aws-lambda-powertools/tracer',
           '@aws-lambda-powertools/metrics',
           '@aws-lambda-powertools/parser',
-          'aws-sdk',
         ],
-        minify: false,
+        minify: true,
         sourceMap: false,
         target: 'node22',
         forceDockerBundling: false, // Use local esbuild instead of Docker
@@ -398,8 +398,8 @@ export class GitHubMonitorStack extends Stack {
     // Environment variables - using nullish coalescing to preserve falsy values
     const githubRepository = process.env.GITHUB_REPOSITORY!;
     const notificationEmail = process.env.NOTIFICATION_EMAIL!;
-    const environment = process.env.ENVIRONMENT ?? 'dev';
-    const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET ?? 'my-webhook-secret';
+    const environment = process.env.ENVIRONMENT!;
+    const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET!;
     const stackName = this.stackName;
 
     // Create monitoring resources (DLQ)
@@ -416,30 +416,16 @@ export class GitHubMonitorStack extends Stack {
       deadLetterQueue: monitoring.deadLetterQueue,
     });
 
-    // Create notification system
-    const notification = new NotificationConstruct(this, `${stackName}-notification`, {
+    new NotificationConstruct(this, `${stackName}-notification`, {
       stackName,
       lambdaFunction: webhookApi.lambdaFunction,
       notificationEmail,
     });
 
-    // Stack outputs for external reference
     new CfnOutput(this, `${stackName}-webhook-url`, {
       exportName: `${stackName}-webhook-url`,
       value: `https://${webhookApi.apiGateway.restApiId}.execute-api.${Aws.REGION}.amazonaws.com/${webhookApi.apiGateway.deploymentStage.stageName}/webhook`,
       description: `${stackName} Webhook URL`,
-    });
-
-    new CfnOutput(this, `${stackName}-topic-arn`, {
-      exportName: `${stackName}-topic-arn`,
-      value: notification.snsTopic.topicArn,
-      description: `${stackName} SNS Topic ARN`,
-    });
-
-    new CfnOutput(this, `${stackName}-lambda-function-name`, {
-      exportName: `${stackName}-lambda-function-name`,
-      value: webhookApi.lambdaFunction.functionName,
-      description: `${stackName} Lambda Function Name`,
     });
 
     new CfnOutput(this, `${stackName}-dlq-arn`, {

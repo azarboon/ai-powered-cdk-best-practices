@@ -11,25 +11,26 @@ import 'source-map-support/register';
 import { App, Aspects } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 import { AwsSolutionsChecks } from 'cdk-nag';
-import { applyTags, validateEnvVars } from '../lib/helpers';
+import { applyTags, validateAllEnvVars } from '../lib/helpers';
+import { validateENVIRONMENT } from '../lib/config';
 
-validateEnvVars();
+validateAllEnvVars();
+validateENVIRONMENT();
 
 const app = new App();
 
 // Apply centralized tagging to entire CDK application
 applyTags(app, {
-  Environment: process.env.ENVIRONMENT!,
-  Service: process.env.SERVICE!,
-  Team: process.env.TEAM!,
-  CostCenter: process.env.COST_CENTER!,
-  Project: process.env.CDK_STACK_NAME!,
+  ENVIRONMENT: process.env.ENVIRONMENT!,
+  SERVICE: process.env.SERVICE!,
+  TEAM: process.env.TEAM!,
+  COST_CENTER: process.env.COST_CENTER!,
 });
 
-new GitHubMonitorStack(app, process.env.CDK_STACK_NAME!, {
+new GitHubMonitorStack(app, process.env.STACK_NAME!, {
   env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION ?? 'us-east-1',
+    account: process.env.AWS_ACCOUNT_ID,
+    region: process.env.AWS_REGION ?? 'us-east-1',
   },
 });
 

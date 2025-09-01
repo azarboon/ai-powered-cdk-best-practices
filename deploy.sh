@@ -50,11 +50,11 @@ echo "📋 Step 1: Validating environment variables..."
 
 # Check required environment variables
 REQUIRED_VARS=(
-    "CDK_DEFAULT_ACCOUNT"
-    "CDK_DEFAULT_REGION"
+    "AWS_ACCOUNT_ID"
+    "AWS_REGION"
     "GITHUB_REPOSITORY" 
     "NOTIFICATION_EMAIL"
-    "CDK_STACK_NAME"
+    "STACK_NAME"
     "ENVIRONMENT"
     "SERVICE"
     "TEAM"
@@ -79,11 +79,11 @@ if [ ${#MISSING_VARS[@]} -ne 0 ]; then
 fi
 
 echo "✅ Environment variables validated"
-echo "   Account: ${CDK_DEFAULT_ACCOUNT:-}"
-echo "   Region: ${CDK_DEFAULT_REGION:-}"
+echo "   Account: ${AWS_ACCOUNT_ID:-}"
+echo "   Region: ${AWS_REGION:-}"
 echo "   Repository: ${GITHUB_REPOSITORY:-}"
 echo "   Email: ${NOTIFICATION_EMAIL:-}"
-echo "   CDK Stack name: ${CDK_STACK_NAME:-}"
+echo "   CDK Stack name: ${STACK_NAME:-}"
 echo ""
 
 # =============================================================================
@@ -150,7 +150,7 @@ echo "📋 Step 5: Post-deployment information..."
 
 # Extract webhook URL from CDK outputs
 WEBHOOK_URL=$(aws cloudformation describe-stacks \
-    --stack-name ${CDK_STACK_NAME:-} \
+    --stack-name ${STACK_NAME:-} \
     --query 'Stacks[0].Outputs[?OutputKey==`WebhookUrl`].OutputValue' \
     --output text 2>/dev/null || echo "Unable to retrieve")
 

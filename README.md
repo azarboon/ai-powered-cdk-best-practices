@@ -26,10 +26,51 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
-<!--
-create a test to validate env vars
-create a unit test using Matcher that checks aws lambda against best practices
+<!-- implement these
+you changed many things...test whether the app is still functional
 
+Aspects enforce infra-level settings on CloudFormation components during CDK synthesis, while ESLint enforces build-time rules before synthesis.
+
+Use Aspects to enforce on all Lambda functions (not just NodejsFunction):
+
+ARM64 architecture
+
+Log retention explicitly set and finite
+
+Tracing.ACTIVE is set
+
+If retryAttempts > 0, require DLQ or onFailure destination
+
+retryAttempts ≤ 2
+
+Lambda Powertools layer is used
+
+Use ESLint to enforce across the entire codebase:
+
+Raise an error for any secret, whether defined as an environment variable or hard-coded value (e.g., via eslint-plugin-no-secrets).
+
+Use ESLint to enforce only on NodejsFunction:
+
+bundling.minify = true
+
+bundling.sourceMap = false in production
+
+bundling.target must match runtime explicitly:
+
+Node.js 18.x → target: 'es2022'
+
+Node.js 20.x → target: 'es2023'
+
+Node.js 22.x → target: 'es2024'
+
+Forbid aws-sdk v2 imports
+
+bundling.externalModules must exclude '@aws-sdk/client-*'
+
+If the Powertools layer is used, bundling.externalModules must exclude '@aws-lambda-powertools/**'
+
+-->
+<!--
 implement these rules & tests:
 https://docs.aws.amazon.com/cdk/v2/guide/best-practices.html#best-practices-code
 
