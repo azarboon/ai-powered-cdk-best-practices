@@ -1,9 +1,9 @@
-import { validateAllEnvVars } from '../lib/helpers';
+import { validateEnvVars } from '../lib/helpers';
 
 describe('Validate required inputs', () => {
   test('should throw error when required environment variables are missing', () => {
     try {
-      validateAllEnvVars();
+      validateEnvVars();
       throw new Error(
         'Expected validation function to throw an error when the environment variable(s) are unavailable.'
       );

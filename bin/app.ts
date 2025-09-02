@@ -11,11 +11,9 @@ import 'source-map-support/register';
 import { App, Aspects } from 'aws-cdk-lib';
 import { GitHubMonitorStack } from '../lib/github-monitor-stack';
 import { AwsSolutionsChecks } from 'cdk-nag';
-import { applyTags, validateAllEnvVars } from '../lib/helpers';
-import { validateEnvironment } from '../lib/config';
+import { applyTags, validateEnvVars } from '../lib/helpers';
 
-validateAllEnvVars();
-validateEnvironment();
+validateEnvVars();
 
 const app = new App();
 

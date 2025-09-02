@@ -117,7 +117,7 @@ export class MyApplicationStack extends cdk.Stack {
 
 ## Do Not Hardcode Environment Name Constants
 
-Never hardcode environment names (e.g., `dev`, `test`, `prod`) anywhere in the code except in `lib/config.ts`. Each environment must be defined as a separate constant and added to the `ENVIRONMENTS` array. To reference an environment, import and use the constant (e.g., `import { PROD } from './config'`), and always refer to the constant, not a string literal.
+Never hardcode environment names (e.g., `dev`, `test`, `prod`) anywhere in the code except in `lib/config.ts`. Each environment must be defined inside the `ENVIRONMENTS` object. To reference an environment, import and use the property (e.g., `import { ENVIRONMENTS } from './config'` then `ENVIRONMENTS.PROD`), and always refer to the object properties, not string literals.
 
 ## Naming Convention Rule – Dynamic Component Names
 

@@ -1,3 +1,9 @@
+/**
+ *
+ * I mostly vibe-coded this logic and haven’t fully vetted it.
+ * It works, but may be inefficient or clumsy — use with caution.
+ */
+
 import { Stack, StackProps, Duration, Aws, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
 import { Runtime, Architecture, Tracing, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -15,20 +21,11 @@ import { PolicyStatement, Effect, AnyPrincipal } from 'aws-cdk-lib/aws-iam';
 import { Queue, QueueEncryption } from 'aws-cdk-lib/aws-sqs';
 import { ApiGatewayToLambda } from '@aws-solutions-constructs/aws-apigateway-lambda';
 import { LambdaToSns } from '@aws-solutions-constructs/aws-lambda-sns';
-import { isEnvironment, ENVIRONMENTS } from './config';
+import { Environments } from './config';
+import { isEnvironment } from './helpers';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 
-/**
- * Properties for WebhookApiConstruct
- */
-interface WebhookApiProps {
-  readonly stackName: string;
-  readonly environment: string;
-  readonly githubRepository: string;
-  readonly webhookSecret: string;
-  readonly deadLetterQueue: Queue;
-}
 /**
  * Webhook API Construct - Encapsulates API Gateway + Lambda using Solutions Constructs
  */
@@ -37,10 +34,8 @@ class WebhookApiConstruct extends Construct {
   public readonly lambdaFunction: NodejsFunction;
   public readonly apiGatewayLambda: ApiGatewayToLambda;
 
-  constructor(scope: Construct, id: string, props: WebhookApiProps) {
+  constructor(scope: Construct, id: string, stackName: string, deadLetterQueue: Queue) {
     super(scope, id);
-
-    const { stackName, environment, githubRepository, webhookSecret, deadLetterQueue } = props;
 
     // Create NodejsFunction with automatic bundling
     this.lambdaFunction = new NodejsFunction(this, `${stackName}-webhook-processor`, {
@@ -61,12 +56,12 @@ class WebhookApiConstruct extends Construct {
         ),
       ],
       environment: {
-        GITHUB_REPOSITORY: githubRepository,
-        ENVIRONMENT: environment,
-        GITHUB_WEBHOOK_SECRET: webhookSecret,
+        GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY!,
+        ENVIRONMENT: process.env.ENVIRONMENT!,
+        GITHUB_WEBHOOK_SECRET: process.env.GITHUB_WEBHOOK_SECRET!,
         POWERTOOLS_SERVICE_NAME: `${stackName}-webhook-processor`,
-        POWERTOOLS_LOG_LEVEL: isEnvironment(ENVIRONMENTS.PROD) ? 'INFO' : 'DEBUG',
-        POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${environment}`,
+        POWERTOOLS_LOG_LEVEL: isEnvironment(Environments.PROD) ? 'INFO' : 'DEBUG',
+        POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${process.env.ENVIRONMENT!}`,
         POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
         POWERTOOLS_LOGGER_LOG_EVENT: 'true',
         POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
@@ -95,7 +90,7 @@ class WebhookApiConstruct extends Construct {
         description: `${stackName} webhook receiver`,
         proxy: false,
         deployOptions: {
-          stageName: `${stackName}-${environment}`,
+          stageName: `${stackName}-${process.env.ENVIRONMENT!}`,
           loggingLevel: MethodLoggingLevel.INFO,
           dataTraceEnabled: true,
           metricsEnabled: true,
@@ -263,28 +258,14 @@ class WebhookApiConstruct extends Construct {
 }
 
 /**
- * Properties for NotificationConstruct
- */
-interface NotificationProps {
-  readonly stackName: string;
-  readonly lambdaFunction: NodejsFunction;
-  readonly notificationEmail: string;
-}
-
-/**
  * Notification Construct - Encapsulates SNS using Solutions Constructs
  */
 class NotificationConstruct extends Construct {
-  public readonly snsTopic: any;
-  public readonly lambdaSns: LambdaToSns;
-
-  constructor(scope: Construct, id: string, props: NotificationProps) {
+  constructor(scope: Construct, id: string, stackName: string, lambdaFunction: NodejsFunction) {
     super(scope, id);
 
-    const { stackName, lambdaFunction, notificationEmail } = props;
-
     // AWS Solutions Construct: Lambda + SNS
-    this.lambdaSns = new LambdaToSns(this, `${stackName}-notification`, {
+    const lambdaSns = new LambdaToSns(this, `${stackName}-notification`, {
       existingLambdaObj: lambdaFunction,
       topicProps: {
         topicName: `${stackName}-notification-topic`,
@@ -292,17 +273,17 @@ class NotificationConstruct extends Construct {
       },
     });
 
-    this.snsTopic = this.lambdaSns.snsTopic;
+    const snsTopic = lambdaSns.snsTopic;
 
     // Add email subscription to SNS topic
-    this.snsTopic.addSubscription(
-      new EmailSubscription(notificationEmail, {
+    snsTopic.addSubscription(
+      new EmailSubscription(process.env.NOTIFICATION_EMAIL!, {
         json: false,
       })
     );
 
     // Update Lambda environment with SNS topic ARN
-    lambdaFunction.addEnvironment('SNS_TOPIC_ARN', this.snsTopic.topicArn);
+    lambdaFunction.addEnvironment('SNS_TOPIC_ARN', snsTopic.topicArn);
   }
 }
 
@@ -376,51 +357,26 @@ class MonitoringConstruct extends Construct {
 export class GitHubMonitorStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
-
-    // Environment variables validation
-    const validateEnvironment = (): void => {
-      const required = ['GITHUB_REPOSITORY', 'NOTIFICATION_EMAIL', 'GITHUB_WEBHOOK_SECRET'];
-      const missing = required.filter(key => !process.env[key]);
-      if (missing.length) {
-        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-      }
-
-      if (!process.env.GITHUB_REPOSITORY?.includes('/')) {
-        throw new Error('GITHUB_REPOSITORY must be in format "owner/repo"');
-      }
-      if (!process.env.NOTIFICATION_EMAIL?.includes('@')) {
-        throw new Error('NOTIFICATION_EMAIL must be a valid email');
-      }
-    };
-
-    validateEnvironment();
-
-    // Environment variables - using nullish coalescing to preserve falsy values
-    const githubRepository = process.env.GITHUB_REPOSITORY!;
-    const notificationEmail = process.env.NOTIFICATION_EMAIL!;
-    const environment = process.env.ENVIRONMENT!;
-    const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET!;
     const stackName = this.stackName;
 
-    // Create monitoring resources (DLQ)
     const monitoring = new MonitoringConstruct(this, `${stackName}-monitoring`, {
       stackName,
     });
 
     // Create webhook API with Lambda
-    const webhookApi = new WebhookApiConstruct(this, `${stackName}-webhook-api`, {
+    const webhookApi = new WebhookApiConstruct(
+      this,
+      `${stackName}-webhook-api`,
       stackName,
-      environment,
-      githubRepository,
-      webhookSecret,
-      deadLetterQueue: monitoring.deadLetterQueue,
-    });
+      monitoring.deadLetterQueue
+    );
 
-    new NotificationConstruct(this, `${stackName}-notification`, {
+    new NotificationConstruct(
+      this,
+      `${stackName}-notification`,
       stackName,
-      lambdaFunction: webhookApi.lambdaFunction,
-      notificationEmail,
-    });
+      webhookApi.lambdaFunction
+    );
 
     new CfnOutput(this, `${stackName}-webhook-url`, {
       exportName: `${stackName}-webhook-url`,

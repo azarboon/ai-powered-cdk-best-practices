@@ -1,0 +1,28 @@
+[mcp_servers.awslabs.aws-api-mcp-server]
+command = "uvx"
+args = ["awslabs.aws-api-mcp-server@latest"]
+disabled = false
+autoApprove = []
+env = { AWS_REGION = "us-east-1", FASTMCP_LOG_LEVEL = "DEBUG" }
+
+[mcp_servers.awslabs.cdk-mcp-server]
+command = "uvx"
+args = ["awslabs.cdk-mcp-server@latest"]
+disabled = false
+autoApprove = []
+env = { FASTMCP_LOG_LEVEL = "DEBUG" }
+
+[mcp_servers.aws-knowledge-mcp-server]
+command = "uvx"
+args = [
+  "mcp-proxy",
+  "--transport",
+  "streamablehttp",
+  "https://knowledge-mcp.global.api.aws"
+]
+env = { FASTMCP_LOG_LEVEL = "DEBUG" }
+
+[mcp_servers.awslabs.lambda-tool-mcp-server]
+command = "uvx"
+args = ["awslabs.lambda-tool-mcp-server@latest"]
+env = { AWS_PROFILE = "default", AWS_REGION = "us-east-1" }

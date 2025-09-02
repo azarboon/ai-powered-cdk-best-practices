@@ -1,5 +1,8 @@
 /**
  * GitHub Webhook Processor
+ *
+ * I mostly vibe-coded this logic and haven’t fully vetted it.
+ * It works, but may be inefficient or clumsy — use with caution.
  */
 
 import middy from '@middy/core';
@@ -20,23 +23,6 @@ const { captureLambdaHandler } = require('@aws-lambda-powertools/tracer/middlewa
 const { parser } = require('@aws-lambda-powertools/parser/middleware');
 const { APIGatewayProxyEventSchema } = require('@aws-lambda-powertools/parser/schemas');
 
-// Environment variable validation
-const validateEnvironment = (): void => {
-  const required = ['GITHUB_REPOSITORY', 'SNS_TOPIC_ARN', 'GITHUB_WEBHOOK_SECRET', 'AWS_REGION'];
-  const missing = required.filter(env => !process.env[env]);
-  if (missing.length) throw new Error(`Missing environment variables: ${missing.join(', ')}`);
-
-  if (!process.env.GITHUB_REPOSITORY?.includes('/')) {
-    throw new Error('GITHUB_REPOSITORY must be in format "owner/repo"');
-  }
-  if (!process.env.SNS_TOPIC_ARN?.startsWith('arn:aws:sns:')) {
-    throw new Error('SNS_TOPIC_ARN must be a valid SNS topic ARN');
-  }
-};
-
-validateEnvironment();
-
-// Initialize Powertools and clients
 const logger = new Logger({ serviceName: 'github-webhook-processor' });
 const tracer = new Tracer({ serviceName: 'github-webhook-processor' });
 const metrics = new Metrics({
@@ -49,7 +35,7 @@ const sns = tracer.captureAWSv3Client(
     requestHandler: new NodeHttpHandler(),
   })
 );
-
+// @azarboon: consider moving these into lib/helpers. check if powertools can be used by other services
 // Utility functions
 const logError = (message: string, error: any, context?: any) => {
   logger.error(message, {
