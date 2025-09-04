@@ -5,13 +5,15 @@
 
 # Reference Application to Enhance AI-Powered Serverless Development
 
-Providing a [reference application](https://martinfowler.com/articles/pushing-ai-autonomy.html) is an effective way to enhance the quality of coding assistance. This project is designed to serve as such a reference, demonstrating best practices for developing serverless applications with AWS CDK in TypeScript. Reference applications are particularly important given that AWS CDK documentation and its sample projects can become outdated. For instance, at the time of writing, the official CDK documentation offers only [one example](https://github.com/cdklabs/aws-cdk-testing-examples/) for testing CDK applications, which was last maintained more than two years ago and still uses AWS CDK v1. This project aims to address these gaps by providing an up-to-date, practical resource.
+Providing a [reference application](https://martinfowler.com/articles/pushing-ai-autonomy.html) is an effective way to enhance the quality of coding assistance. Given the poor quality of AWS’s sample projects\*, this project is designed to serve as such a reference, demonstrating best practices for developing serverless applications with AWS CDK in TypeScript.
 
-Its configurations are intended to be reusable across other applications, regardless of business logic—enabling users to adopt proven TypeScript configurations, AI integration contexts, automated tests, security checks, and other best-practice project settings.
+This project’s configurations are based on best practices and are intended to be reusable across other applications, regardless of business logic. For example, some CDK best practices are embedded in the TypeScript rules and unit tests and can be easily applied to other projects with minor tweaks. Users can reuse the TypeScript and ESLint configurations, AI integration contexts, automated tests, security checks, and other settings from this project for their own use.
 
 The app monitors changes in a GitHub repository (configurable in `.env` file), parsing and filtering commit content, and notifying the user of detected differences. The business logic is intentionally simple. The emphasis is on robust application- and project-level practices, such as automated code quality enforcement and AI-assisted tooling integration, rather than on optimizing the specific business logic.
 
 The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AWS Model Context Protocol (MCP) servers, but it can be adapted for other coding agents or MCP implementations. Development rules for the AI assistant are defined in `.amazonq/rules/PROJECT_RULES.md` to ensure consistent, secure, and high-quality outputs following best practices. While these contexts and configurations are not perfect and continue to evolve, they are designed for reuse in other projects.
+
+\*: Reference applications are particularly important given that AWS CDK documentation and its sample projects can become outdated. For instance, at the time of writing, the official CDK documentation offers only [one example](https://github.com/cdklabs/aws-cdk-testing-examples/) for testing CDK applications, which was last maintained more than two years ago and still uses AWS CDK v1. This project aims to address these gaps by providing an up-to-date, practical resource.
 
 <!--
 @azarboon: test by creating and changing a new file, than just README.
@@ -27,10 +29,7 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!-- implement these
-
-you changed many things...test whether the app is still functional
-
-fix codex settings
+test wehether the app works and whether tags are applied properly. if not, consider adding TAG_ to env...
 
 ${stackName}-webhook-api and ${stackName}-notification have been repeated in the code. make sure its hardcoded only once.
 
@@ -215,6 +214,8 @@ All configuration is managed through environment variables (no hardcoded values)
 
 ## Best Practices Implemented
 
+- Certain CDK best practices are enforced through ESLint rules—for example, restricting `process.env` usage outside of `bin/app.ts` and requiring values to be provided via props.
+- The project also includes unit tests for common scenarios such as tag application, dynamic versus hardcoded naming, and environment variable validation. These tests can be reused across projects with minor modifications.
 - Enforced [AWS Solutions Library](https://github.com/cdklabs/cdk-nag/blob/main/RULES.md) rules via CDK Nag checks.
 - Prioritized use of CDK Level 3 (L3) constructs where appropriate.
 - API Gateway logs metadata for both requests and responses. <!-- @azarboon: validate this -->

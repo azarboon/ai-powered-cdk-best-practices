@@ -1,9 +1,11 @@
-import { validateEnvVars } from '../lib/helpers';
+import { buildConfigFromEnv } from '../lib/config';
 
+// @azarboon: make this test more comprehensive to catch different types of errors
 describe('Validate required inputs', () => {
   test('should throw error when required environment variables are missing', () => {
+    process.env.AWS_REGION = 'us-east-1';
     try {
-      validateEnvVars();
+      buildConfigFromEnv(process.env);
       throw new Error(
         'Expected validation function to throw an error when the environment variable(s) are unavailable.'
       );

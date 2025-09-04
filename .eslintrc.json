@@ -43,6 +43,23 @@
         "unused-imports/no-unused-imports": "error",
         "unused-imports/no-unused-vars": ["error"]
       }
+    },
+    {
+      /*
+This rule enforces the CDK best practice to configure via properties and methods rather than reading environment variables. Environment lookups inside constructs or stacks are an anti-pattern; accept a props object instead. The rule targets infrastructure (CDK) code only, so exclude Lambda runtime code and test files.
+      */
+      "files": ["**/*.ts"],
+      "excludedFiles": ["bin/app.ts", "test/**/*.ts", "lambda/**/*.ts"],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "process",
+            "property": "env",
+            "message": "Environment variable lookup is only allowed in bin/app.ts"
+          }
+        ]
+      }
     }
   ]
 }

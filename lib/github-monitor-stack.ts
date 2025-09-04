@@ -21,7 +21,7 @@ import { PolicyStatement, Effect, AnyPrincipal } from 'aws-cdk-lib/aws-iam';
 import { Queue, QueueEncryption } from 'aws-cdk-lib/aws-sqs';
 import { ApiGatewayToLambda } from '@aws-solutions-constructs/aws-apigateway-lambda';
 import { LambdaToSns } from '@aws-solutions-constructs/aws-lambda-sns';
-import { Environments } from './config';
+import { Environments, AppConfig } from './config';
 import { isEnvironment } from './helpers';
 import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
@@ -33,8 +33,14 @@ class WebhookApiConstruct extends Construct {
   public readonly apiGateway: RestApi;
   public readonly lambdaFunction: NodejsFunction;
   public readonly apiGatewayLambda: ApiGatewayToLambda;
-
-  constructor(scope: Construct, id: string, stackName: string, deadLetterQueue: Queue) {
+  // @azarboon: instead of passing entire appconfig, only pass relevant part
+  constructor(
+    scope: Construct,
+    id: string,
+    stackName: string,
+    deadLetterQueue: Queue,
+    appConfig: AppConfig
+  ) {
     super(scope, id);
 
     // Create NodejsFunction with automatic bundling
@@ -56,12 +62,12 @@ class WebhookApiConstruct extends Construct {
         ),
       ],
       environment: {
-        GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY!,
-        ENVIRONMENT: process.env.ENVIRONMENT!,
-        GITHUB_WEBHOOK_SECRET: process.env.GITHUB_WEBHOOK_SECRET!,
+        GITHUB_WEBHOOK_SECRET: appConfig.GITHUB_WEBHOOK_SECRET,
+        GITHUB_REPOSITORY: appConfig.GITHUB_REPOSITORY,
+        ENVIRONMENT: appConfig.ENVIRONMENT,
         POWERTOOLS_SERVICE_NAME: `${stackName}-webhook-processor`,
-        POWERTOOLS_LOG_LEVEL: isEnvironment(Environments.PROD) ? 'INFO' : 'DEBUG',
-        POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${process.env.ENVIRONMENT!}`,
+        POWERTOOLS_LOG_LEVEL: isEnvironment(Environments.PROD, appConfig) ? 'INFO' : 'DEBUG',
+        POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${appConfig.ENVIRONMENT}`,
         POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
         POWERTOOLS_LOGGER_LOG_EVENT: 'true',
         POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
@@ -90,7 +96,7 @@ class WebhookApiConstruct extends Construct {
         description: `${stackName} webhook receiver`,
         proxy: false,
         deployOptions: {
-          stageName: `${stackName}-${process.env.ENVIRONMENT!}`,
+          stageName: `${stackName}-${appConfig.ENVIRONMENT}`,
           loggingLevel: MethodLoggingLevel.INFO,
           dataTraceEnabled: true,
           metricsEnabled: true,
@@ -257,11 +263,15 @@ class WebhookApiConstruct extends Construct {
   }
 }
 
-/**
- * Notification Construct - Encapsulates SNS using Solutions Constructs
- */
+// @azarboon: instead of passing entire appconfig, only pass relevant part
 class NotificationConstruct extends Construct {
-  constructor(scope: Construct, id: string, stackName: string, lambdaFunction: NodejsFunction) {
+  constructor(
+    scope: Construct,
+    id: string,
+    stackName: string,
+    lambdaFunction: NodejsFunction,
+    appConfig: AppConfig
+  ) {
     super(scope, id);
 
     // AWS Solutions Construct: Lambda + SNS
@@ -277,7 +287,7 @@ class NotificationConstruct extends Construct {
 
     // Add email subscription to SNS topic
     snsTopic.addSubscription(
-      new EmailSubscription(process.env.NOTIFICATION_EMAIL!, {
+      new EmailSubscription(appConfig.NOTIFICATION_EMAIL, {
         json: false,
       })
     );
@@ -354,9 +364,14 @@ class MonitoringConstruct extends Construct {
  * - SNS topic with SSL enforcement and encryption
  * - Least privilege IAM permissions via Solutions Constructs
  */
+
+export interface GitHubMonitorStackProps extends StackProps {
+  appConfig: Readonly<AppConfig>;
+}
+
 export class GitHubMonitorStack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
-    super(scope, id, props);
+  constructor(scope: Construct, id: string, { appConfig, ...stackProps }: GitHubMonitorStackProps) {
+    super(scope, id, stackProps);
     const stackName = this.stackName;
 
     const monitoring = new MonitoringConstruct(this, `${stackName}-monitoring`, {
@@ -368,14 +383,16 @@ export class GitHubMonitorStack extends Stack {
       this,
       `${stackName}-webhook-api`,
       stackName,
-      monitoring.deadLetterQueue
+      monitoring.deadLetterQueue,
+      appConfig
     );
 
     new NotificationConstruct(
       this,
       `${stackName}-notification`,
       stackName,
-      webhookApi.lambdaFunction
+      webhookApi.lambdaFunction,
+      appConfig
     );
 
     new CfnOutput(this, `${stackName}-webhook-url`, {
