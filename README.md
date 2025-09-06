@@ -15,10 +15,6 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 
 \*: Reference applications are particularly important given that AWS CDK documentation and its sample projects can become outdated. For instance, at the time of writing, the official CDK documentation offers only [one example](https://github.com/cdklabs/aws-cdk-testing-examples/) for testing CDK applications, which was last maintained more than two years ago and still uses AWS CDK v1. This project aims to address these gaps by providing an up-to-date, practical resource.
 
-<!--
-@azarboon: test by creating and changing a new file, than just README.
--->
-
 ## Warning
 
 - [Context poisoning](https://martinfowler.com/articles/exploring-gen-ai/software-supply-chain-attack-surface.html) is a major risk when using coding assistants. Always review and validate external contexts and project rules before adopting them.
@@ -29,8 +25,7 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!-- implement these
-test wehether the app works and whether tags are applied properly. if not, consider adding TAG_ to env...
-
+ermove dynamic names. they are unnecessaery
 ${stackName}-webhook-api and ${stackName}-notification have been repeated in the code. make sure its hardcoded only once.
 
 github-webhook-processor has been hardcoded in the code several times. fix it.
