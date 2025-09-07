@@ -1,12 +1,12 @@
 import { Template, Tags } from 'aws-cdk-lib/assertions';
 import { App } from 'aws-cdk-lib';
-import { GitHubMonitorStack } from '../lib/github-monitor-stack';
+import { GitHubMonitor } from '../lib/github-monitor-stack';
 import { AppConfig } from '../lib/config';
 import { applyTags } from '../lib/helpers';
 
 describe('Testing stack level configurations', () => {
   let app: App;
-  let stack: GitHubMonitorStack;
+  let stack: GitHubMonitor;
   let mockConfig: AppConfig;
   let template: Template;
 
@@ -30,7 +30,7 @@ describe('Testing stack level configurations', () => {
     };
 
     applyTags(app, mockConfig.TAGS);
-    stack = new GitHubMonitorStack(app, mockConfig.STACK_NAME, { appConfig: mockConfig });
+    stack = new GitHubMonitor(app, mockConfig.STACK_NAME, { appConfig: mockConfig });
     template = Template.fromStack(stack);
   });
 

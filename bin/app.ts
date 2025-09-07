@@ -9,7 +9,7 @@
 
 import 'source-map-support/register';
 import { App, Aspects } from 'aws-cdk-lib';
-import { GitHubMonitorStack } from '../lib/github-monitor-stack';
+import { GitHubMonitor } from '../lib/github-monitor-stack';
 import { AwsSolutionsChecks } from 'cdk-nag';
 import { applyTags, buildConfig } from '../lib/helpers';
 
@@ -19,7 +19,7 @@ const appConfig = buildConfig(process.env);
 
 applyTags(app, appConfig.TAGS);
 
-new GitHubMonitorStack(app, appConfig.STACK_NAME, {
+new GitHubMonitor(app, appConfig.STACK_NAME, {
   env: { account: appConfig.AWS_ACCOUNT_ID, region: appConfig.AWS_REGION },
   appConfig,
 });

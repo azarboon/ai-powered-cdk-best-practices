@@ -18,7 +18,6 @@ import {
   MethodLoggingLevel,
 } from 'aws-cdk-lib/aws-apigateway';
 import { PolicyStatement, Effect, AnyPrincipal } from 'aws-cdk-lib/aws-iam';
-import { Queue, QueueEncryption } from 'aws-cdk-lib/aws-sqs';
 import { ApiGatewayToLambda } from '@aws-solutions-constructs/aws-apigateway-lambda';
 import { LambdaToSns } from '@aws-solutions-constructs/aws-lambda-sns';
 import { Environments, AppConfig } from './config';
@@ -27,37 +26,44 @@ import { NagSuppressions } from 'cdk-nag';
 import { Construct } from 'constructs';
 
 /**
- * Webhook API Construct - Encapsulates API Gateway + Lambda using Solutions Constructs
+ * This stack implements a serverless GitHub webhook processor using API Gateway, Lambda, and SNS,
+ * leveraging vetted AWS Solutions Constructs patterns to enforce security and best practices.
+ *
+ * It prioritizes the use of L3 constructs and validates GitHub webhook requests at the API Gateway level,
+ * with an additional signature verification performed inside the Lambda function.
  */
-class WebhookApiConstruct extends Construct {
-  public readonly apiGateway: RestApi;
-  public readonly lambdaFunction: NodejsFunction;
-  public readonly apiGatewayLambda: ApiGatewayToLambda;
-  // @azarboon: instead of passing entire appconfig, only pass relevant part
-  constructor(
-    scope: Construct,
-    id: string,
-    stackName: string,
-    deadLetterQueue: Queue,
-    appConfig: AppConfig
-  ) {
-    super(scope, id);
 
-    // Create NodejsFunction with automatic bundling
-    this.lambdaFunction = new NodejsFunction(this, `${stackName}-webhook-processor`, {
-      functionName: `${stackName}-webhook-processor`,
+class Webhook extends Construct {
+  public apiGateway: RestApi;
+  public lambdaFunction: NodejsFunction;
+  public apiGatewayLambda: ApiGatewayToLambda;
+  private readonly stackName: string;
+
+  // @azarboon: instead of passing entire appconfig, only pass relevant part
+  constructor(scope: Construct, id: string, appConfig: AppConfig) {
+    super(scope, id);
+    this.stackName = appConfig.STACK_NAME;
+    this.createApiIntegration(appConfig);
+    this.setupApiValidation();
+    this.setupSecurityPolicies();
+    this.addNagSuppressions();
+  }
+
+  private createApiIntegration(appConfig: AppConfig): void {
+    this.lambdaFunction = new NodejsFunction(this, `${this.stackName}-webhook-processor`, {
+      functionName: this.node.id,
       runtime: Runtime.NODEJS_22_X,
       architecture: Architecture.X86_64,
       handler: 'handler',
       entry: 'lambda/processor.ts',
       timeout: Duration.seconds(30),
       memorySize: 256,
-      deadLetterQueue,
+      deadLetterQueueEnabled: true,
       retryAttempts: 2,
       layers: [
         LayerVersion.fromLayerVersionArn(
           this,
-          `${stackName}-powertools-layer`,
+          `${this.stackName}-powertools-layer`,
           `arn:aws:lambda:${Aws.REGION}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:33`
         ),
       ],
@@ -65,9 +71,9 @@ class WebhookApiConstruct extends Construct {
         GITHUB_WEBHOOK_SECRET: appConfig.GITHUB_WEBHOOK_SECRET,
         GITHUB_REPOSITORY: appConfig.GITHUB_REPOSITORY,
         ENVIRONMENT: appConfig.ENVIRONMENT,
-        POWERTOOLS_SERVICE_NAME: `${stackName}-webhook-processor`,
+        POWERTOOLS_SERVICE_NAME: `${this.stackName}-webhook-processor`,
         POWERTOOLS_LOG_LEVEL: isEnvironment(Environments.PROD, appConfig) ? 'INFO' : 'DEBUG',
-        POWERTOOLS_METRICS_NAMESPACE: `${stackName}/${appConfig.ENVIRONMENT}`,
+        POWERTOOLS_METRICS_NAMESPACE: `${this.stackName}/${appConfig.ENVIRONMENT}`,
         POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
         POWERTOOLS_LOGGER_LOG_EVENT: 'true',
         POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
@@ -84,43 +90,36 @@ class WebhookApiConstruct extends Construct {
         minify: true,
         sourceMap: false,
         target: 'node22',
-        forceDockerBundling: false, // Use local esbuild instead of Docker
+        forceDockerBundling: false,
       },
     });
 
-    // AWS Solutions Construct: API Gateway + Lambda
-    this.apiGatewayLambda = new ApiGatewayToLambda(this, `${stackName}-webhook-api`, {
+    this.apiGatewayLambda = new ApiGatewayToLambda(this, `${this.stackName}-rest-integration`, {
       existingLambdaObj: this.lambdaFunction,
       apiGatewayProps: {
-        restApiName: `${stackName}-webhook-api`,
-        description: `${stackName} webhook receiver`,
+        restApiName: this.node.id,
+        description: `${this.stackName} webhook receiver`,
         proxy: false,
         deployOptions: {
-          stageName: `${stackName}-${appConfig.ENVIRONMENT}`,
+          stageName: `${this.stackName}-${appConfig.ENVIRONMENT}`,
           loggingLevel: MethodLoggingLevel.INFO,
           dataTraceEnabled: true,
           metricsEnabled: true,
         },
       },
       logGroupProps: {
-        logGroupName: `/aws/lambda/${stackName}-webhook-processor`,
+        logGroupName: `/aws/lambda/${this.stackName}-webhook-processor`,
         retention: RetentionDays.THREE_DAYS,
         removalPolicy: RemovalPolicy.DESTROY,
       },
     });
 
     this.apiGateway = this.apiGatewayLambda.apiGateway;
-
-    // Add request validation and webhook endpoint
-    this.setupWebhookEndpoint(stackName);
-    this.setupSecurityPolicies();
-    this.addNagSuppressions();
   }
 
-  private setupWebhookEndpoint(stackName: string): void {
-    // Add request validation model for GitHub webhooks
-    const webhookModel = this.apiGateway.addModel(`${stackName}-webhook-model`, {
-      modelName: `${stackName}WebhookModel`,
+  private setupApiValidation(): void {
+    const webhookModel = this.apiGateway.addModel(`${this.stackName}WebhookValidation`, {
+      modelName: `${this.stackName}WebhookModel`,
       contentType: 'application/json',
       schema: {
         type: JsonSchemaType.OBJECT,
@@ -142,11 +141,11 @@ class WebhookApiConstruct extends Construct {
     });
 
     // Add request validator
-    const requestValidator = new RequestValidator(this, `${stackName}-webhook-validator`, {
+    const requestValidator = new RequestValidator(this, `${this.stackName}-webhook-validator`, {
       restApi: this.apiGateway,
       validateRequestBody: true,
       validateRequestParameters: true,
-      requestValidatorName: `${stackName}WebhookValidator`,
+      requestValidatorName: this.node.id,
     });
 
     // Create webhook endpoint
@@ -260,11 +259,24 @@ class WebhookApiConstruct extends Construct {
       ],
       true
     );
+
+    // Suppress Lambda DLQ SSL warning - DLQ is managed internally by Lambda service
+    NagSuppressions.addResourceSuppressions(
+      this.lambdaFunction,
+      [
+        {
+          id: 'AwsSolutions-SQS4',
+          reason:
+            'DLQ is used internally by Lambda service and does not require SSL enforcement. Lambda service handles secure communication to SQS internally.',
+        },
+      ],
+      true
+    );
   }
 }
 
 // @azarboon: instead of passing entire appconfig, only pass relevant part
-class NotificationConstruct extends Construct {
+class Notification extends Construct {
   constructor(
     scope: Construct,
     id: string,
@@ -273,12 +285,13 @@ class NotificationConstruct extends Construct {
     appConfig: AppConfig
   ) {
     super(scope, id);
-
+    // @azarboon: make the this.stackname as private property, like webhook construct
+    // @azarboon: remove stackname among required props. like webhook construct
     // AWS Solutions Construct: Lambda + SNS
-    const lambdaSns = new LambdaToSns(this, `${stackName}-notification`, {
+    const lambdaSns = new LambdaToSns(this, `${stackName}-notification-topic`, {
       existingLambdaObj: lambdaFunction,
       topicProps: {
-        topicName: `${stackName}-notification-topic`,
+        topicName: this.node.id,
         displayName: `${stackName} Push Notifications`,
       },
     });
@@ -297,114 +310,30 @@ class NotificationConstruct extends Construct {
   }
 }
 
-/**
- * Properties for MonitoringConstruct
- */
-interface MonitoringProps {
-  readonly stackName: string;
-}
-
-// @azarboon: verify DLQ functionality
-/**
- * Monitoring Construct - Encapsulates DLQ and monitoring resources
- */
-class MonitoringConstruct extends Construct {
-  public readonly deadLetterQueue: Queue;
-
-  constructor(scope: Construct, id: string, props: MonitoringProps) {
-    super(scope, id);
-
-    const { stackName } = props;
-
-    // Create Dead Letter Queue for failed invocations
-    this.deadLetterQueue = new Queue(this, `${stackName}-webhook-dlq`, {
-      queueName: `${stackName}-webhook-dlq`,
-      retentionPeriod: Duration.days(14),
-      encryption: QueueEncryption.SQS_MANAGED,
-    });
-
-    this.addNagSuppressions();
-  }
-
-  private addNagSuppressions(): void {
-    // Suppress DLQ encryption warning - SQS managed encryption is sufficient for this use case
-    NagSuppressions.addResourceSuppressions(
-      this.deadLetterQueue,
-      [
-        {
-          id: 'AwsSolutions-SQS3',
-          reason:
-            'SQS managed encryption is sufficient for webhook processing DLQ. Customer managed KMS keys are not required for this use case.',
-        },
-        {
-          id: 'AwsSolutions-SQS4',
-          reason:
-            'DLQ is used internally by Lambda service and does not require SSL enforcement. Lambda service handles secure communication to SQS internally.',
-        },
-      ],
-      true
-    );
-  }
-}
-
-/**
- * GitHub Monitor Stack - Built with AWS Solutions Constructs
- *
- * This stack implements a serverless GitHub webhook processor using vetted
- * AWS Solutions Constructs patterns for security and best practices.
- *
- * Architecture:
- * - API Gateway (with GitHub webhook signature verification)
- * - Lambda Function (processes webhooks and extracts git diffs)
- * - SNS Topic (sends email notifications)
- *
- * Security:
- * - GitHub webhook signature verification using HMAC-SHA256
- * - API Gateway with authorizationType: NONE (required for GitHub webhooks)
- * - SNS topic with SSL enforcement and encryption
- * - Least privilege IAM permissions via Solutions Constructs
- */
-
 export interface GitHubMonitorStackProps extends StackProps {
   appConfig: Readonly<AppConfig>;
 }
 
-export class GitHubMonitorStack extends Stack {
+export class GitHubMonitor extends Stack {
   constructor(scope: Construct, id: string, { appConfig, ...stackProps }: GitHubMonitorStackProps) {
     super(scope, id, stackProps);
+    // @azarboon: make the this.stackname as private property, like webhook construct
     const stackName = this.stackName;
 
-    const monitoring = new MonitoringConstruct(this, `${stackName}-monitoring`, {
-      stackName,
-    });
+    const webhook = new Webhook(this, `${stackName}-webhook`, appConfig);
 
-    // Create webhook API with Lambda
-    const webhookApi = new WebhookApiConstruct(
-      this,
-      `${stackName}-webhook-api`,
-      stackName,
-      monitoring.deadLetterQueue,
-      appConfig
-    );
-
-    new NotificationConstruct(
+    new Notification(
       this,
       `${stackName}-notification`,
       stackName,
-      webhookApi.lambdaFunction,
+      webhook.lambdaFunction,
       appConfig
     );
 
     new CfnOutput(this, `${stackName}-webhook-url`, {
-      exportName: `${stackName}-webhook-url`,
-      value: `https://${webhookApi.apiGateway.restApiId}.execute-api.${Aws.REGION}.amazonaws.com/${webhookApi.apiGateway.deploymentStage.stageName}/webhook`,
+      exportName: this.node.id,
+      value: `${webhook.apiGateway.url}webhook`,
       description: `${stackName} Webhook URL`,
-    });
-
-    new CfnOutput(this, `${stackName}-dlq-arn`, {
-      exportName: `${stackName}-dlq-arn`,
-      value: monitoring.deadLetterQueue.queueArn,
-      description: `${stackName} Dead Letter Queue ARN for failed webhook processing`,
     });
   }
 }

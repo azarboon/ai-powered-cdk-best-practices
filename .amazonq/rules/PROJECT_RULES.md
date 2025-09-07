@@ -123,6 +123,27 @@ Never hardcode environment names (e.g., `dev`, `test`, `prod`) anywhere in the c
 
 Never hardcode component names in infrastructure code; instead, dynamically generate them by combining the stack name with a relevant suffix (e.g., {stackName}-topic for an SNS topic, {stackName}-processor for a Lambda function, or {stackName}-api for an API Gateway). This ensures consistent naming across environments, avoids resource name collisions, and supports maintainable, scalable deployments.
 
+## Avoid duplicating resource names in CDK constructs
+
+Never duplicate resource names when creating CDK constructs.  
+If a construct's ID and a resource property (e.g., `functionName`, `queueName`, `topicName`) would have the same value, reference the construct's ID with `this.node.id` instead of repeating the string literal.
+
+**❌ Wrong:**
+
+```typescript
+this.lambdaFunction = new NodejsFunction(this, `${stackName}-processor`, {
+  functionName: `${stackName}-processor`, // Duplicated
+});
+```
+
+**✅ Correct:**
+
+```typescript
+this.lambdaFunction = new NodejsFunction(this, `${stackName}-processor`, {
+  functionName: this.node.id, // References construct ID
+});
+```
+
 ## Single Responsibility Constructs and Stacks
 
 **Each Construct or Stack MUST perform exactly one clearly defined function.**  
