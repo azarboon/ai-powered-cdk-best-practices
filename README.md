@@ -25,7 +25,7 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!-- implement these
-ermove dynamic names. they are unnecessaery
+write checks to ensure retention policies are expliitly set and definite
 ${stackName}-webhook-api and ${stackName}-notification have been repeated in the code. make sure its hardcoded only once.
 
 github-webhook-processor has been hardcoded in the code several times. fix it.
