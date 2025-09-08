@@ -96,7 +96,7 @@ export class MyApplicationStack extends cdk.Stack {
 
 ## CDK Construct Selection Policy
 
-1. Always use the highest-level CDK construct (L3/pattern) that meets functional, security, compliance, and cost requirements **and** is actively maintained (updated within the last 6 months, with responsive issue handling).
+1. Always prioritize the highest-level CDK construct (L3/pattern) that meets functional, security, compliance, and cost requirements **and** is actively maintained (updated within the last 6 months, with responsive issue handling).
 2. If no suitable L3 exists or it imposes unacceptable constraints:
    - Use an L2 construct instead.
    - Document why a higher-level construct was not suitable and how it was evaluated.
@@ -114,6 +114,13 @@ export class MyApplicationStack extends cdk.Stack {
    - Unit tests for logic, and
    - Integration tests that verify the actual AWS resources created.
 7. Prefer composition over inheritance. Keep construct APIs stable to allow easy swapping between L1, L2, and L3 in the future.
+
+## CDK Construct Design and Construct Composition
+
+- Always separate responsibilities when designing constructs. Each construct should perform exactly one clearly defined function (Single Responsibility Principle).
+- Before creating a new construct, document your design rationale: why it is needed, how it will interact with other constructs, and the trade-offs compared to alternative approaches. Proceed only after admin approval.
+- If the same resource or grouping of resources is used repeatedly, wrap them into a custom composite construct that exposes only the minimal public surface (e.g., endpoints, ARNs, IDs).
+- Do not treat a stack as a construct when counting responsibilities. Stacks orchestrate constructs; constructs encapsulate functionality.
 
 ## Do Not Hardcode Environment Name Constants
 

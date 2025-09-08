@@ -54,13 +54,19 @@
     "fs_read",
     "@aws-knowledge-mcp-server/*",
     "@awslabs.aws-api-mcp-server/call_aws",
-    "@awslabs.cdk-mcp-server/*"
+    "@awslabs.cdk-mcp-server/*",
+    "@awslabs.cdk-mcp-server/CDKGeneralGuidance",
+    "@awslabs.cdk-mcp-server/GetAwsSolutionsConstructPatter",
+    "@awslabs.cdk-mcp-server/ExplainCDKNagRule"
   ],
   "allowedTools": [
     "fs_read",
     "@aws-knowledge-mcp-server/*",
     "@awslabs.aws-api-mcp-server/call_aws",
-    "@awslabs.cdk-mcp-server/*"
+    "@awslabs.cdk-mcp-server/*",
+    "@awslabs.cdk-mcp-server/CDKGeneralGuidance",
+    "@awslabs.cdk-mcp-server/GetAwsSolutionsConstructPatter",
+    "@awslabs.cdk-mcp-server/ExplainCDKNagRule"
   ],
   "useLegacyMcpJson": true
 }

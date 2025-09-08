@@ -1,9 +1,3 @@
-/**
- *
- * I mostly vibe-coded this logic and haven’t fully vetted it.
- * It works, but may be inefficient or clumsy — use with caution.
- */
-
 import { Stack, StackProps, Duration, Aws, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
 import { Runtime, Architecture, Tracing, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -35,67 +29,21 @@ import { Construct } from 'constructs';
 
 class Webhook extends Construct {
   public apiGateway: RestApi;
-  public lambdaFunction: NodejsFunction;
   public apiGatewayLambda: ApiGatewayToLambda;
   private readonly stackName: string;
 
-  // @azarboon: instead of passing entire appconfig, only pass relevant part
-  constructor(scope: Construct, id: string, appConfig: AppConfig) {
+  constructor(scope: Construct, id: string, lambdaFunction: NodejsFunction, appConfig: AppConfig) {
     super(scope, id);
     this.stackName = appConfig.STACK_NAME;
-    this.createApiIntegration(appConfig);
-    this.setupApiValidation();
+    this.createApiIntegration(lambdaFunction, appConfig);
+    this.setupApiValidation(lambdaFunction);
     this.setupSecurityPolicies();
     this.addNagSuppressions();
   }
 
-  private createApiIntegration(appConfig: AppConfig): void {
-    this.lambdaFunction = new NodejsFunction(this, `${this.stackName}-webhook-processor`, {
-      functionName: this.node.id,
-      runtime: Runtime.NODEJS_22_X,
-      architecture: Architecture.X86_64,
-      handler: 'handler',
-      entry: 'lambda/processor.ts',
-      timeout: Duration.seconds(30),
-      memorySize: 256,
-      deadLetterQueueEnabled: true,
-      retryAttempts: 2,
-      layers: [
-        LayerVersion.fromLayerVersionArn(
-          this,
-          `${this.stackName}-powertools-layer`,
-          `arn:aws:lambda:${Aws.REGION}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:33`
-        ),
-      ],
-      environment: {
-        GITHUB_WEBHOOK_SECRET: appConfig.GITHUB_WEBHOOK_SECRET,
-        GITHUB_REPOSITORY: appConfig.GITHUB_REPOSITORY,
-        ENVIRONMENT: appConfig.ENVIRONMENT,
-        POWERTOOLS_SERVICE_NAME: `${this.stackName}-webhook-processor`,
-        POWERTOOLS_LOG_LEVEL: isEnvironment(Environments.PROD, appConfig) ? 'INFO' : 'DEBUG',
-        POWERTOOLS_METRICS_NAMESPACE: `${this.stackName}/${appConfig.ENVIRONMENT}`,
-        POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
-        POWERTOOLS_LOGGER_LOG_EVENT: 'true',
-        POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
-        POWERTOOLS_TRACER_CAPTURE_ERROR: 'true',
-      },
-      tracing: Tracing.ACTIVE,
-      bundling: {
-        externalModules: [
-          '@aws-lambda-powertools/logger',
-          '@aws-lambda-powertools/tracer',
-          '@aws-lambda-powertools/metrics',
-          '@aws-lambda-powertools/parser',
-        ],
-        minify: true,
-        sourceMap: false,
-        target: 'node22',
-        forceDockerBundling: false,
-      },
-    });
-
+  private createApiIntegration(lambdaFunction: NodejsFunction, appConfig: AppConfig): void {
     this.apiGatewayLambda = new ApiGatewayToLambda(this, `${this.stackName}-rest-integration`, {
-      existingLambdaObj: this.lambdaFunction,
+      existingLambdaObj: lambdaFunction,
       apiGatewayProps: {
         restApiName: this.node.id,
         description: `${this.stackName} webhook receiver`,
@@ -117,7 +65,7 @@ class Webhook extends Construct {
     this.apiGateway = this.apiGatewayLambda.apiGateway;
   }
 
-  private setupApiValidation(): void {
+  private setupApiValidation(lambdaFunction: NodejsFunction): void {
     const webhookModel = this.apiGateway.addModel(`${this.stackName}WebhookValidation`, {
       modelName: `${this.stackName}WebhookModel`,
       contentType: 'application/json',
@@ -150,7 +98,7 @@ class Webhook extends Construct {
 
     // Create webhook endpoint
     const webhook = this.apiGateway.root.addResource('webhook');
-    webhook.addMethod('POST', new LambdaIntegration(this.lambdaFunction), {
+    webhook.addMethod('POST', new LambdaIntegration(lambdaFunction), {
       authorizationType: AuthorizationType.NONE,
       requestValidator,
       requestModels: {
@@ -190,30 +138,6 @@ class Webhook extends Construct {
   private addNagSuppressions(): void {
     // Suppress CDK Nag warnings for AWS Solutions Constructs defaults
     NagSuppressions.addResourceSuppressions(
-      this.lambdaFunction.role!,
-      [
-        {
-          id: 'AwsSolutions-IAM4',
-          reason:
-            'NodejsFunction construct uses AWSLambdaBasicExecutionRole managed policy for CloudWatch logs access. This is the standard AWS pattern for Lambda functions.',
-          appliesTo: [
-            'Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
-          ],
-        },
-        {
-          id: 'AwsSolutions-IAM5',
-          reason:
-            'AWS Solutions Constructs uses wildcard permissions for Lambda CloudWatch logs access. This is a standard pattern for Lambda logging.',
-          appliesTo: [
-            'Resource::arn:<AWS::Partition>:logs:<AWS::Region>:<AWS::AccountId>:log-group:/aws/lambda/*',
-            'Resource::*',
-          ],
-        },
-      ],
-      true
-    );
-
-    NagSuppressions.addResourceSuppressions(
       this.apiGatewayLambda.apiGatewayCloudWatchRole!,
       [
         {
@@ -221,6 +145,19 @@ class Webhook extends Construct {
           reason:
             'AWS Solutions Constructs uses wildcard permissions for API Gateway CloudWatch logs access. This is required for API Gateway logging functionality.',
           appliesTo: ['Resource::arn:<AWS::Partition>:logs:<AWS::Region>:<AWS::AccountId>:*'],
+        },
+      ],
+      true
+    );
+
+    // Suppress Lambda DLQ SSL warning - DLQ is managed internally by Lambda service
+    NagSuppressions.addResourceSuppressions(
+      this.apiGatewayLambda.apiGateway.deploymentStage,
+      [
+        {
+          id: 'AwsSolutions-APIG3',
+          reason:
+            'AWS WAFv2 is not required for this development webhook endpoint. In production, consider adding WAFv2 for additional security.',
         },
       ],
       true
@@ -248,45 +185,22 @@ class Webhook extends Construct {
       true
     );
 
-    NagSuppressions.addResourceSuppressions(
-      this.apiGatewayLambda.apiGateway.deploymentStage,
-      [
-        {
-          id: 'AwsSolutions-APIG3',
-          reason:
-            'AWS WAFv2 is not required for this development webhook endpoint. In production, consider adding WAFv2 for additional security.',
-        },
-      ],
-      true
-    );
-
-    // Suppress Lambda DLQ SSL warning - DLQ is managed internally by Lambda service
-    NagSuppressions.addResourceSuppressions(
-      this.lambdaFunction,
-      [
-        {
-          id: 'AwsSolutions-SQS4',
-          reason:
-            'DLQ is used internally by Lambda service and does not require SSL enforcement. Lambda service handles secure communication to SQS internally.',
-        },
-      ],
-      true
-    );
+    // Add webhook URL output
+    new CfnOutput(this, `${this.stackName}-webhook-url`, {
+      exportName: `${this.stackName}-webhook-url`,
+      value: `${this.apiGateway.url}webhook`,
+      description: `${this.stackName} Webhook URL`,
+    });
   }
 }
 
 // @azarboon: instead of passing entire appconfig, only pass relevant part
 class Notification extends Construct {
-  constructor(
-    scope: Construct,
-    id: string,
-    stackName: string,
-    lambdaFunction: NodejsFunction,
-    appConfig: AppConfig
-  ) {
+  constructor(scope: Construct, id: string, lambdaFunction: NodejsFunction, appConfig: AppConfig) {
     super(scope, id);
     // @azarboon: make the this.stackname as private property, like webhook construct
     // @azarboon: remove stackname among required props. like webhook construct
+    const stackName = appConfig.STACK_NAME;
     // AWS Solutions Construct: Lambda + SNS
     const lambdaSns = new LambdaToSns(this, `${stackName}-notification-topic`, {
       existingLambdaObj: lambdaFunction,
@@ -314,26 +228,98 @@ export interface GitHubMonitorStackProps extends StackProps {
   appConfig: Readonly<AppConfig>;
 }
 
+function createProcessorFunction(scope: Construct, appConfig: AppConfig): NodejsFunction {
+  const processorFunction = new NodejsFunction(scope, `${appConfig.STACK_NAME}-processor`, {
+    functionName: `${appConfig.STACK_NAME}-processor`,
+    runtime: Runtime.NODEJS_22_X,
+    architecture: Architecture.ARM_64,
+    handler: 'handler',
+    entry: 'lambda/processor.ts',
+    timeout: Duration.seconds(30),
+    memorySize: 256,
+    deadLetterQueueEnabled: true,
+    retryAttempts: 2,
+    layers: [
+      LayerVersion.fromLayerVersionArn(
+        scope,
+        `${appConfig.STACK_NAME}-powertools-layer`,
+        `arn:aws:lambda:${Aws.REGION}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:33`
+      ),
+    ],
+    environment: {
+      GITHUB_WEBHOOK_SECRET: appConfig.GITHUB_WEBHOOK_SECRET,
+      GITHUB_REPOSITORY: appConfig.GITHUB_REPOSITORY,
+      ENVIRONMENT: appConfig.ENVIRONMENT,
+      POWERTOOLS_SERVICE_NAME: `${appConfig.STACK_NAME}-webhook-processor`,
+      POWERTOOLS_LOG_LEVEL: isEnvironment(Environments.PROD, appConfig) ? 'INFO' : 'DEBUG',
+      POWERTOOLS_METRICS_NAMESPACE: `${appConfig.STACK_NAME}/${appConfig.ENVIRONMENT}`,
+      POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
+      POWERTOOLS_LOGGER_LOG_EVENT: 'true',
+      POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
+      POWERTOOLS_TRACER_CAPTURE_ERROR: 'true',
+    },
+    tracing: Tracing.ACTIVE,
+    bundling: {
+      externalModules: [
+        '@aws-lambda-powertools/logger',
+        '@aws-lambda-powertools/tracer',
+        '@aws-lambda-powertools/metrics',
+        '@aws-lambda-powertools/parser',
+      ],
+      minify: true,
+      sourceMap: false,
+      target: 'node22',
+      forceDockerBundling: false,
+    },
+  });
+
+  // Add Lambda NAG suppressions
+  NagSuppressions.addResourceSuppressions(
+    processorFunction.role!,
+    [
+      {
+        id: 'AwsSolutions-IAM4',
+        reason:
+          'NodejsFunction construct uses AWSLambdaBasicExecutionRole managed policy for CloudWatch logs access. This is the standard AWS pattern for Lambda functions.',
+        appliesTo: [
+          'Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+        ],
+      },
+      {
+        id: 'AwsSolutions-IAM5',
+        reason:
+          'AWS Solutions Constructs uses wildcard permissions for Lambda CloudWatch logs access. This is a standard pattern for Lambda logging.',
+        appliesTo: [
+          'Resource::arn:<AWS::Partition>:logs:<AWS::Region>:<AWS::AccountId>:log-group:/aws/lambda/*',
+          'Resource::*',
+        ],
+      },
+    ],
+    true
+  );
+
+  NagSuppressions.addResourceSuppressions(
+    processorFunction,
+    [
+      {
+        id: 'AwsSolutions-SQS4',
+        reason:
+          'DLQ is used internally by Lambda service and does not require SSL enforcement. Lambda service handles secure communication to SQS internally.',
+      },
+    ],
+    true
+  );
+
+  return processorFunction;
+}
+
 export class GitHubMonitor extends Stack {
   constructor(scope: Construct, id: string, { appConfig, ...stackProps }: GitHubMonitorStackProps) {
     super(scope, id, stackProps);
-    // @azarboon: make the this.stackname as private property, like webhook construct
-    const stackName = this.stackName;
+    const processorFunction = createProcessorFunction(this, appConfig);
 
-    const webhook = new Webhook(this, `${stackName}-webhook`, appConfig);
+    new Webhook(this, `${appConfig.STACK_NAME}-webhook`, processorFunction, appConfig);
 
-    new Notification(
-      this,
-      `${stackName}-notification`,
-      stackName,
-      webhook.lambdaFunction,
-      appConfig
-    );
-
-    new CfnOutput(this, `${stackName}-webhook-url`, {
-      exportName: this.node.id,
-      value: `${webhook.apiGateway.url}webhook`,
-      description: `${stackName} Webhook URL`,
-    });
+    new Notification(this, `${appConfig.STACK_NAME}-notification`, processorFunction, appConfig);
   }
 }
