@@ -26,6 +26,16 @@ import { Construct } from 'constructs';
  * It prioritizes the use of L3 constructs and validates GitHub webhook requests at the API Gateway level,
  * with an additional signature verification performed inside the Lambda function.
  */
+export class GitHubMonitor extends Stack {
+  constructor(scope: Construct, id: string, { appConfig, ...stackProps }: GitHubMonitorStackProps) {
+    super(scope, id, stackProps);
+    const processorFunction = createProcessorFunction(this, appConfig);
+
+    new Webhook(this, `${appConfig.STACK_NAME}-webhook`, processorFunction, appConfig);
+
+    new Notification(this, `${appConfig.STACK_NAME}-notification`, processorFunction, appConfig);
+  }
+}
 
 class Webhook extends Construct {
   public apiGateway: RestApi;
@@ -35,13 +45,8 @@ class Webhook extends Construct {
   constructor(scope: Construct, id: string, lambdaFunction: NodejsFunction, appConfig: AppConfig) {
     super(scope, id);
     this.stackName = appConfig.STACK_NAME;
-    this.createApiIntegration(lambdaFunction, appConfig);
-    this.setupApiValidation(lambdaFunction);
-    this.setupSecurityPolicies();
-    this.addNagSuppressions();
-  }
 
-  private createApiIntegration(lambdaFunction: NodejsFunction, appConfig: AppConfig): void {
+    // creates api gateway and lambda integrtion using L3 construct
     this.apiGatewayLambda = new ApiGatewayToLambda(this, `${this.stackName}-rest-integration`, {
       existingLambdaObj: lambdaFunction,
       apiGatewayProps: {
@@ -63,9 +68,8 @@ class Webhook extends Construct {
     });
 
     this.apiGateway = this.apiGatewayLambda.apiGateway;
-  }
 
-  private setupApiValidation(lambdaFunction: NodejsFunction): void {
+    // creates model to validate webhook requests
     const webhookModel = this.apiGateway.addModel(`${this.stackName}WebhookValidation`, {
       modelName: `${this.stackName}WebhookModel`,
       contentType: 'application/json',
@@ -96,7 +100,7 @@ class Webhook extends Construct {
       requestValidatorName: this.node.id,
     });
 
-    // Create webhook endpoint
+    // Create webhook endpoint and attaches validator and request model to the API
     const webhook = this.apiGateway.root.addResource('webhook');
     webhook.addMethod('POST', new LambdaIntegration(lambdaFunction), {
       authorizationType: AuthorizationType.NONE,
@@ -110,9 +114,7 @@ class Webhook extends Construct {
         'method.request.header.Content-Type': true,
       },
     });
-  }
 
-  private setupSecurityPolicies(): void {
     // Apply resource policy to API Gateway for GitHub IP allowlist
     this.apiGateway.addToResourcePolicy(
       new PolicyStatement({
@@ -133,9 +135,7 @@ class Webhook extends Construct {
         },
       })
     );
-  }
 
-  private addNagSuppressions(): void {
     // Suppress CDK Nag warnings for AWS Solutions Constructs defaults
     NagSuppressions.addResourceSuppressions(
       this.apiGatewayLambda.apiGatewayCloudWatchRole!,
@@ -311,15 +311,4 @@ function createProcessorFunction(scope: Construct, appConfig: AppConfig): Nodejs
   );
 
   return processorFunction;
-}
-
-export class GitHubMonitor extends Stack {
-  constructor(scope: Construct, id: string, { appConfig, ...stackProps }: GitHubMonitorStackProps) {
-    super(scope, id, stackProps);
-    const processorFunction = createProcessorFunction(this, appConfig);
-
-    new Webhook(this, `${appConfig.STACK_NAME}-webhook`, processorFunction, appConfig);
-
-    new Notification(this, `${appConfig.STACK_NAME}-notification`, processorFunction, appConfig);
-  }
 }
