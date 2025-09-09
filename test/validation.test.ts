@@ -13,7 +13,7 @@ describe('Validate required inputs', () => {
     delete process.env.ENVIRONMENT;
     delete process.env.AWS_ACCOUNT_ID;
     delete process.env.STACK_NAME;
-    delete process.env.GITHUB_WEBHOOK_SECRET;
+    delete process.env.WEBHOOK_SECRET;
     delete process.env.NOTIFICATION_EMAIL;
     delete process.env.SERVICE;
     delete process.env.TEAM;
@@ -29,7 +29,7 @@ describe('Validate required inputs', () => {
       expect(errorMessage).toContain('Missing AWS_ACCOUNT_ID');
       expect(errorMessage).toContain('Missing ENVIRONMENT');
       expect(errorMessage).toContain('Missing STACK_NAME');
-      expect(errorMessage).toContain('Missing GITHUB_WEBHOOK_SECRET');
+      expect(errorMessage).toContain('Missing WEBHOOK_SECRET');
       expect(errorMessage).toContain('Missing NOTIFICATION_EMAIL');
       expect(errorMessage).toContain('Missing SERVICE');
       expect(errorMessage).toContain('Missing TEAM');

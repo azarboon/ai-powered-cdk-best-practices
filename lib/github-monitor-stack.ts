@@ -29,11 +29,11 @@ import { Construct } from 'constructs';
 export class GitHubMonitor extends Stack {
   constructor(scope: Construct, id: string, { appConfig, ...stackProps }: GitHubMonitorStackProps) {
     super(scope, id, stackProps);
-    const processorFunction = createProcessorFunction(this, appConfig);
+    const processor = createProcessorFunction(this, appConfig);
 
-    new Webhook(this, `${appConfig.STACK_NAME}-webhook`, processorFunction, appConfig);
+    new Webhook(this, `${appConfig.STACK_NAME}-webhook`, processor, appConfig);
 
-    new Notification(this, `${appConfig.STACK_NAME}-notification`, processorFunction, appConfig);
+    new Notification(this, `${appConfig.STACK_NAME}-notification`, processor, appConfig);
   }
 }
 
@@ -184,9 +184,7 @@ class Webhook extends Construct {
       ],
       true
     );
-
-    // Add webhook URL output
-    new CfnOutput(this, `${this.stackName}-webhook-url`, {
+    new CfnOutput(this, `webhook-url`, {
       exportName: `${this.stackName}-webhook-url`,
       value: `${this.apiGateway.url}webhook`,
       description: `${this.stackName} Webhook URL`,
@@ -194,32 +192,27 @@ class Webhook extends Construct {
   }
 }
 
-// @azarboon: instead of passing entire appconfig, only pass relevant part
 class Notification extends Construct {
   constructor(scope: Construct, id: string, lambdaFunction: NodejsFunction, appConfig: AppConfig) {
     super(scope, id);
-    // @azarboon: make the this.stackname as private property, like webhook construct
-    // @azarboon: remove stackname among required props. like webhook construct
-    const stackName = appConfig.STACK_NAME;
+
     // AWS Solutions Construct: Lambda + SNS
-    const lambdaSns = new LambdaToSns(this, `${stackName}-notification-topic`, {
+    const lambdaSns = new LambdaToSns(this, this.node.id, {
       existingLambdaObj: lambdaFunction,
       topicProps: {
-        topicName: this.node.id,
-        displayName: `${stackName} Push Notifications`,
+        topicName: appConfig.STACK_NAME,
+        displayName: `${appConfig.STACK_NAME} Push Notifications`,
       },
     });
 
     const snsTopic = lambdaSns.snsTopic;
 
-    // Add email subscription to SNS topic
     snsTopic.addSubscription(
       new EmailSubscription(appConfig.NOTIFICATION_EMAIL, {
         json: false,
       })
     );
 
-    // Update Lambda environment with SNS topic ARN
     lambdaFunction.addEnvironment('SNS_TOPIC_ARN', snsTopic.topicArn);
   }
 }
@@ -247,14 +240,13 @@ function createProcessorFunction(scope: Construct, appConfig: AppConfig): Nodejs
       ),
     ],
     environment: {
-      GITHUB_WEBHOOK_SECRET: appConfig.GITHUB_WEBHOOK_SECRET,
-      GITHUB_REPOSITORY: appConfig.GITHUB_REPOSITORY,
+      WEBHOOK_SECRET: appConfig.WEBHOOK_SECRET,
+      REPOSITORY: appConfig.REPOSITORY,
+      STACK_NAME: appConfig.STACK_NAME,
       ENVIRONMENT: appConfig.ENVIRONMENT,
-      POWERTOOLS_SERVICE_NAME: `${appConfig.STACK_NAME}-webhook-processor`,
+      POWERTOOLS_SERVICE_NAME: appConfig.STACK_NAME,
       POWERTOOLS_LOG_LEVEL: isEnvironment(Environments.PROD, appConfig) ? 'INFO' : 'DEBUG',
       POWERTOOLS_METRICS_NAMESPACE: `${appConfig.STACK_NAME}/${appConfig.ENVIRONMENT}`,
-      POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
-      POWERTOOLS_LOGGER_LOG_EVENT: 'true',
       POWERTOOLS_TRACER_CAPTURE_RESPONSE: 'true',
       POWERTOOLS_TRACER_CAPTURE_ERROR: 'true',
     },

@@ -12,8 +12,6 @@ import * as crypto from 'crypto';
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
 import type { APIGatewayProxyResult } from 'aws-lambda';
-
-// Import Powertools from AWS Lambda Layer
 const { Logger } = require('@aws-lambda-powertools/logger');
 const { injectLambdaContext } = require('@aws-lambda-powertools/logger/middleware');
 const { Metrics, MetricUnit } = require('@aws-lambda-powertools/metrics');
@@ -22,21 +20,31 @@ const { Tracer } = require('@aws-lambda-powertools/tracer');
 const { captureLambdaHandler } = require('@aws-lambda-powertools/tracer/middleware');
 const { parser } = require('@aws-lambda-powertools/parser/middleware');
 const { APIGatewayProxyEventSchema } = require('@aws-lambda-powertools/parser/schemas');
-
-const logger = new Logger({ serviceName: 'github-webhook-processor' });
-const tracer = new Tracer({ serviceName: 'github-webhook-processor' });
-const metrics = new Metrics({
-  namespace: 'GitHubMonitor',
-  serviceName: 'github-webhook-processor',
-});
+const logger = new Logger();
+const tracer = new Tracer();
+const metrics = new Metrics();
 const sns = tracer.captureAWSv3Client(
   new SNSClient({
     region: process.env.AWS_REGION,
     requestHandler: new NodeHttpHandler(),
   })
 );
-// @azarboon: consider moving these into lib/helpers. check if powertools can be used by other services
-// Utility functions
+
+// Middleware chain. The order of middlewares matter and reordering them may cause error
+export const handler = middy()
+  .use(captureRawBody()) // 1st: Preserve raw bytes
+  .use(captureLambdaHandler(tracer)) // 2nd: Start tracing
+  .use(injectLambdaContext(logger)) // 3rd: Logger context
+  .use(logMetrics(metrics)) // 4th: Metrics setup
+  .use(signatureVerification()) // 5th: HMAC verification
+  .use(parser({ schema: APIGatewayProxyEventSchema })) // 6th: Validate schema
+  .use(httpJsonBodyParser()) // 7th: Parse JSON body
+  .use(httpErrorHandler()) // 8th: Error handling
+  .handler(lambdaHandler)
+  .onError(() => {
+    metrics.publishStoredMetrics();
+  });
+
 const logError = (message: string, error: any, context?: any) => {
   logger.error(message, {
     error: error instanceof Error ? error.message : String(error),
@@ -52,7 +60,7 @@ const buildResponse = (statusCode: number, message: string, data?: any): APIGate
 const verifySignature = (payload: string | Buffer, signature: string): boolean => {
   if (!signature || !payload) return false;
   try {
-    const hmac = crypto.createHmac('sha256', process.env.GITHUB_WEBHOOK_SECRET!);
+    const hmac = crypto.createHmac('sha256', process.env.WEBHOOK_SECRET!);
     const expectedSignature = hmac.update(payload).digest('hex');
     const expectedHeader = `sha256=${expectedSignature}`;
     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedHeader));
@@ -62,59 +70,60 @@ const verifySignature = (payload: string | Buffer, signature: string): boolean =
   }
 };
 
-// Middleware functions
-const captureRawBody = () => ({
-  before: async (request: any) => {
-    const { body, isBase64Encoded } = request.event;
-    request.context.rawBodyBuffer = Buffer.from(body, isBase64Encoded ? 'base64' : 'utf8');
-  },
-});
+function captureRawBody() {
+  return {
+    before: async (request: any) => {
+      const { body, isBase64Encoded } = request.event;
+      request.context.rawBodyBuffer = Buffer.from(body, isBase64Encoded ? 'base64' : 'utf8');
+    },
+  };
+}
 
-const signatureVerification = () => ({
-  before: async (request: any) => {
-    const signature =
-      request.event.headers['x-hub-signature-256'] || request.event.headers['X-Hub-Signature-256'];
+function signatureVerification() {
+  return {
+    before: async (request: any) => {
+      const signature =
+        request.event.headers['x-hub-signature-256'] ||
+        request.event.headers['X-Hub-Signature-256'];
 
-    if (!verifySignature(request.context.rawBodyBuffer, signature)) {
-      metrics.addMetric('InvalidSignature', MetricUnit.Count, 1);
-      throw new Error('Invalid signature');
-    }
-  },
-});
+      if (!verifySignature(request.context.rawBodyBuffer, signature)) {
+        metrics.addMetric('InvalidSignature', MetricUnit.Count, 1);
+        throw new Error('Invalid signature');
+      }
+    },
+  };
+}
 
-// GitHub API with retry logic
-const fetchWithRetry = async (url: string, options: any, retries = 3): Promise<any> => {
-  for (let attempt = 1; attempt <= retries; attempt++) {
+const fetchCommitDiff = async (commitSha: string): Promise<any> => {
+  const url = `https://api.github.com/repos/${process.env.REPOSITORY}/commits/${commitSha}`;
+  const options = {
+    headers: {
+      'User-Agent': `${process.env.STACK_NAME}/${process.env.ENVIRONMENT}`,
+      Accept: 'application/vnd.github.v3+json',
+    },
+  };
+
+  // retries max 3 times
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      logger.info('GitHub API request', { url, attempt, retries });
+      logger.info('API request', { url, attempt, retries: 3 });
       const response = await fetch(url, { ...options, signal: AbortSignal.timeout(10000) });
 
-      if (!response.ok)
-        throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+      if (!response.ok) throw new Error(`API error: ${response.status} ${response.statusText}`);
 
       const data = (await response.json()) as any;
-      logger.info('GitHub API success', { url, filesCount: data.files?.length || 0 });
+      logger.info('API success', { url, filesCount: data.files?.length || 0 });
       return data;
     } catch (error) {
-      logError('GitHub API request failed', error, { url, attempt, retries });
+      logError('API request failed', error, { url, attempt, retries: 3 });
 
-      if (attempt === retries) throw error;
+      if (attempt === 3) throw error;
 
       const backoffMs = Math.pow(2, attempt) * 1000;
-      logger.info('Retrying GitHub API request', { url, backoffMs, nextAttempt: attempt + 1 });
+      logger.info('Retrying API request', { url, backoffMs, nextAttempt: attempt + 1 });
       await new Promise(resolve => setTimeout(resolve, backoffMs));
     }
   }
-};
-
-const fetchCommitDiff = async (commitSha: string): Promise<any> => {
-  const url = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/commits/${commitSha}`;
-  return fetchWithRetry(url, {
-    headers: {
-      'User-Agent': `GitHub-Monitor/${process.env.ENVIRONMENT}`,
-      Accept: 'application/vnd.github.v3+json',
-    },
-  });
 };
 
 const formatDiff = (commitData: any): string => {
@@ -140,7 +149,7 @@ const formatDiff = (commitData: any): string => {
 
 const formatEmail = (commitDetails: any, totalCommits: number): string => {
   const { id, author, message, url, diff } = commitDetails;
-  let email = `New commits pushed to ${process.env.GITHUB_REPOSITORY}\n`;
+  let email = `New commits pushed to ${process.env.REPOSITORY}\n`;
   email += `Environment: ${process.env.ENVIRONMENT}\n\n`;
 
   if (totalCommits > 1) email += `Total commits: ${totalCommits} (showing final commit)\n\n`;
@@ -156,7 +165,7 @@ const formatEmail = (commitDetails: any, totalCommits: number): string => {
 };
 
 const sendNotification = async (commitDetails: any, totalCommits: number): Promise<void> => {
-  const subject = `GitHub Push: ${totalCommits} commit(s) to ${process.env.GITHUB_REPOSITORY}`;
+  const subject = `GitHub Push: ${totalCommits} commit(s) to ${process.env.REPOSITORY}`;
   const message = formatEmail(commitDetails, totalCommits);
 
   try {
@@ -185,7 +194,7 @@ const sendNotification = async (commitDetails: any, totalCommits: number): Promi
 };
 
 // Main handler
-const lambdaHandler = async (event: any): Promise<APIGatewayProxyResult> => {
+async function lambdaHandler(event: any): Promise<APIGatewayProxyResult> {
   metrics.addMetric('WebhookReceived', MetricUnit.Count, 1);
 
   const payload = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
@@ -198,7 +207,7 @@ const lambdaHandler = async (event: any): Promise<APIGatewayProxyResult> => {
   }
 
   // Validate repository
-  if (payload.repository?.full_name !== process.env.GITHUB_REPOSITORY) {
+  if (payload.repository?.full_name !== process.env.REPOSITORY) {
     throw new Error('Repository not authorized');
   }
 
@@ -243,19 +252,4 @@ const lambdaHandler = async (event: any): Promise<APIGatewayProxyResult> => {
       error: 'Failed to fetch commit diff',
     });
   }
-};
-
-// Middleware chain. The order of middlewares matter and reordering them may cause error
-export const handler = middy()
-  .use(captureRawBody()) // 1st: Preserve raw bytes
-  .use(captureLambdaHandler(tracer)) // 2nd: Start tracing
-  .use(injectLambdaContext(logger)) // 3rd: Logger context
-  .use(logMetrics(metrics)) // 4th: Metrics setup
-  .use(signatureVerification()) // 5th: HMAC verification
-  .use(parser({ schema: APIGatewayProxyEventSchema })) // 6th: Validate schema
-  .use(httpJsonBodyParser()) // 7th: Parse JSON body
-  .use(httpErrorHandler()) // 8th: Error handling
-  .handler(lambdaHandler)
-  .onError(() => {
-    metrics.publishStoredMetrics();
-  });
+}

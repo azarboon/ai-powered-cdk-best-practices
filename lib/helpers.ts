@@ -28,8 +28,8 @@ export function buildConfig(env: Record<string, string | undefined>): AppConfig 
     AWS_REGION: getValueOf('AWS_REGION'),
     ENVIRONMENT: getValueOf('ENVIRONMENT'),
     STACK_NAME: getValueOf('STACK_NAME'),
-    GITHUB_REPOSITORY: getValueOf('GITHUB_REPOSITORY'),
-    GITHUB_WEBHOOK_SECRET: getValueOf('GITHUB_WEBHOOK_SECRET'),
+    REPOSITORY: getValueOf('REPOSITORY'),
+    WEBHOOK_SECRET: getValueOf('WEBHOOK_SECRET'),
     NOTIFICATION_EMAIL: getValueOf('NOTIFICATION_EMAIL'),
     TAGS: {
       ENVIRONMENT: getValueOf('ENVIRONMENT'),
@@ -40,8 +40,8 @@ export function buildConfig(env: Record<string, string | undefined>): AppConfig 
   };
 
   // Custom validations
-  if (config.GITHUB_REPOSITORY && !config.GITHUB_REPOSITORY.includes('/')) {
-    errors.push('GITHUB_REPOSITORY must be in format "owner/repo"');
+  if (config.REPOSITORY && !config.REPOSITORY.includes('/')) {
+    errors.push('REPOSITORY must be in format "owner/repo"');
   }
   if (config.NOTIFICATION_EMAIL && !config.NOTIFICATION_EMAIL.includes('@')) {
     errors.push('NOTIFICATION_EMAIL must be a valid email');

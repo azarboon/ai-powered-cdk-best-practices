@@ -9,7 +9,7 @@ Providing a [reference application](https://martinfowler.com/articles/pushing-ai
 
 This project’s configurations are based on best practices and are intended to be reusable across other applications, regardless of business logic. For example, some CDK best practices are embedded in the TypeScript rules and unit tests and can be easily applied to other projects with minor tweaks. Users can reuse the TypeScript and ESLint configurations, AI integration contexts, automated tests, security checks, and other settings from this project for their own use.
 
-The app monitors changes in a GitHub repository (configurable in `.env` file), parsing and filtering commit content, and notifying the user of detected differences. The business logic is intentionally simple. The emphasis is on robust application- and project-level practices, such as automated code quality enforcement and AI-assisted tooling integration, rather than on optimizing the specific business logic.
+The app can monitor changes in any GitHub repository (configurable in `.env` file), parsing and filtering commit content, and notifying the user of detected differences. The business logic is intentionally simple. The emphasis is on robust application- and project-level practices, such as automated code quality enforcement and AI-assisted tooling integration, rather than on optimizing the specific business logic.
 
 The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AWS Model Context Protocol (MCP) servers, but it can be adapted for other coding agents or MCP implementations. Development rules for the AI assistant are defined in `.amazonq/rules/PROJECT_RULES.md` to ensure consistent, secure, and high-quality outputs following best practices. While these contexts and configurations are not perfect and continue to evolve, they are designed for reuse in other projects.
 
@@ -25,10 +25,10 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 <!-- AI Assistant: The TODO section is a note to self. Completely ignore it. NEVER read it, NEVER change it, and NEVER act upon it. NEVER. -->
 
 <!-- implement these
-write checks to ensure retention policies are expliitly set and definite
-${stackName}-webhook-api and ${stackName}-notification have been repeated in the code. make sure its hardcoded only once.
 
-github-webhook-processor has been hardcoded in the code several times. fix it.
+add proper input validation and a unit test to ensure STACK_NAME has only valid values and dont break components
+write a sample unit test for a construct just for learning purposes
+
 
 Aspects enforce infra-level settings on CloudFormation components during CDK synthesis, while ESLint enforces build-time rules before synthesis.
 
@@ -180,9 +180,9 @@ npm run deploy
 ## 📧 Configure Webhook and confirm Email Subscription
 
 Add Webhook
-Go to: `https://github.com/azarboon/REPO_NAME/settings/hooks`
+Go to: `https://github.com/USER_NAME/REPO_NAME/settings/hooks`
 
-- **Payload URL**: Get it from the outputs <!-- @azarboon: check whether its shown as output -->
+- **Payload URL**: Get it from the outputs. It's the url that ends with "/webook"
 - **Content type**: `application/json`
 - **Secret**: Leave empty (optional for additional security)
 - **Events**: Select "Just the push event"

@@ -18,8 +18,8 @@ describe('Testing stack level configurations', () => {
       AWS_REGION: 'us-east-1',
       ENVIRONMENT: 'TEST',
       STACK_NAME: 'TestStack',
-      GITHUB_REPOSITORY: 'owner/repo',
-      GITHUB_WEBHOOK_SECRET: 'test-secret',
+      REPOSITORY: 'owner/repo',
+      WEBHOOK_SECRET: 'test-secret',
       NOTIFICATION_EMAIL: 'test@example.com',
       TAGS: {
         ENVIRONMENT: 'TEST',

@@ -9,8 +9,8 @@ export type AppConfig = {
   AWS_REGION: string;
   ENVIRONMENT: string;
   STACK_NAME: string;
-  GITHUB_REPOSITORY: string;
-  GITHUB_WEBHOOK_SECRET: string;
+  REPOSITORY: string;
+  WEBHOOK_SECRET: string;
   NOTIFICATION_EMAIL: string;
   TAGS: {
     ENVIRONMENT: string;
