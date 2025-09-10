@@ -1,4 +1,4 @@
-import { Template, Tags } from 'aws-cdk-lib/assertions';
+import { Tags } from 'aws-cdk-lib/assertions';
 import { App } from 'aws-cdk-lib';
 import { GitHubMonitor } from '../lib/github-monitor-stack';
 import { AppConfig } from '../lib/config';
@@ -8,7 +8,6 @@ describe('Testing stack level configurations', () => {
   let app: App;
   let stack: GitHubMonitor;
   let mockConfig: AppConfig;
-  let template: Template;
 
   beforeAll(() => {
     app = new App();
@@ -31,28 +30,9 @@ describe('Testing stack level configurations', () => {
 
     applyTags(app, mockConfig.TAGS);
     stack = new GitHubMonitor(app, mockConfig.STACK_NAME, { appConfig: mockConfig });
-    template = Template.fromStack(stack);
   });
 
-  test('All resource names are dynamic and include stack-name', () => {
-    const stackName = mockConfig.STACK_NAME;
-    const resources = template.toJSON().Resources;
-
-    for (const [logicalId, resource] of Object.entries<any>(resources)) {
-      const properties = resource.Properties ?? {};
-      for (const [key, val] of Object.entries(properties)) {
-        if ((key === 'Name' || key.endsWith('Name')) && typeof val === 'string') {
-          const resourceInfo = `${resource.Type} ${logicalId}: ${key}="${val}"`;
-          try {
-            expect(val).toContain(stackName);
-            console.log(`${resourceInfo} is dynamic and has "${stackName}")`);
-          } catch (error) {
-            throw new Error(`${resourceInfo} (expected to contain "${stackName}")` + error);
-          }
-        }
-      }
-    }
-  });
+  //@azarboon: create a test that ensures stateful resources logical id hasnt changed
 
   test('Stack-level tags match required tags', () => {
     const stackTags = Tags.fromStack(stack);

@@ -31,9 +31,9 @@ export class GitHubMonitor extends Stack {
     super(scope, id, stackProps);
     const processor = createProcessorFunction(this, appConfig);
 
-    new Webhook(this, `${appConfig.STACK_NAME}-webhook`, processor, appConfig);
+    new Webhook(this, `webhook`, processor, appConfig);
 
-    new Notification(this, `${appConfig.STACK_NAME}-notification`, processor, appConfig);
+    new Notification(this, `notification`, processor, appConfig);
   }
 }
 
@@ -47,10 +47,10 @@ class Webhook extends Construct {
     this.stackName = appConfig.STACK_NAME;
 
     // creates api gateway and lambda integrtion using L3 construct
-    this.apiGatewayLambda = new ApiGatewayToLambda(this, `${this.stackName}-rest-integration`, {
+    this.apiGatewayLambda = new ApiGatewayToLambda(this, `rest-integration`, {
       existingLambdaObj: lambdaFunction,
       apiGatewayProps: {
-        restApiName: this.node.id,
+        restApiName: this.stackName,
         description: `${this.stackName} webhook receiver`,
         proxy: false,
         deployOptions: {
@@ -70,8 +70,7 @@ class Webhook extends Construct {
     this.apiGateway = this.apiGatewayLambda.apiGateway;
 
     // creates model to validate webhook requests
-    const webhookModel = this.apiGateway.addModel(`${this.stackName}WebhookValidation`, {
-      modelName: `${this.stackName}WebhookModel`,
+    const webhookModel = this.apiGateway.addModel(`WebhookValidation`, {
       contentType: 'application/json',
       schema: {
         type: JsonSchemaType.OBJECT,
@@ -93,11 +92,10 @@ class Webhook extends Construct {
     });
 
     // Add request validator
-    const requestValidator = new RequestValidator(this, `${this.stackName}-webhook-validator`, {
+    const requestValidator = new RequestValidator(this, `webhook-validator`, {
       restApi: this.apiGateway,
       validateRequestBody: true,
       validateRequestParameters: true,
-      requestValidatorName: this.node.id,
     });
 
     // Create webhook endpoint and attaches validator and request model to the API
@@ -184,10 +182,9 @@ class Webhook extends Construct {
       ],
       true
     );
-    new CfnOutput(this, `webhook-url`, {
-      exportName: `${this.stackName}-webhook-url`,
+    new CfnOutput(this, 'WebhookUrl', {
       value: `${this.apiGateway.url}webhook`,
-      description: `${this.stackName} Webhook URL`,
+      description: 'Webhook URL',
     });
   }
 }
@@ -199,10 +196,6 @@ class Notification extends Construct {
     // AWS Solutions Construct: Lambda + SNS
     const lambdaSns = new LambdaToSns(this, this.node.id, {
       existingLambdaObj: lambdaFunction,
-      topicProps: {
-        topicName: appConfig.STACK_NAME,
-        displayName: `${appConfig.STACK_NAME} Push Notifications`,
-      },
     });
 
     const snsTopic = lambdaSns.snsTopic;
@@ -222,8 +215,7 @@ export interface GitHubMonitorStackProps extends StackProps {
 }
 
 function createProcessorFunction(scope: Construct, appConfig: AppConfig): NodejsFunction {
-  const processorFunction = new NodejsFunction(scope, `${appConfig.STACK_NAME}-processor`, {
-    functionName: `${appConfig.STACK_NAME}-processor`,
+  const processorFunction = new NodejsFunction(scope, `processor`, {
     runtime: Runtime.NODEJS_22_X,
     architecture: Architecture.ARM_64,
     handler: 'handler',
@@ -235,7 +227,7 @@ function createProcessorFunction(scope: Construct, appConfig: AppConfig): Nodejs
     layers: [
       LayerVersion.fromLayerVersionArn(
         scope,
-        `${appConfig.STACK_NAME}-powertools-layer`,
+        'PowertoolsLayer',
         `arn:aws:lambda:${Aws.REGION}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:33`
       ),
     ],

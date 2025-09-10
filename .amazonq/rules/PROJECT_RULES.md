@@ -130,6 +130,35 @@ Never hardcode environment names (e.g., `dev`, `test`, `prod`) anywhere in the c
 
 Never hardcode component names in infrastructure code; instead, dynamically generate them by combining the stack name with a relevant suffix (e.g., {stackName}-topic for an SNS topic, {stackName}-processor for a Lambda function, or {stackName}-api for an API Gateway). This ensures consistent naming across environments, avoids resource name collisions, and supports maintainable, scalable deployments.
 
+## CDK Construct ID Naming Rule
+
+All CDK construct IDs MUST be:
+
+- **Stable and descriptive** – no environment-dependent or runtime values.
+- **PascalCase**
+- **Human-readable** – meaningful names that reflect the construct’s purpose.
+- **Optionally include a type suffix** (e.g. `Function`, `Queue`, `Topic`) for clarity.
+
+### ✅ Correct – Stable PascalCase IDs
+
+```typescript
+new NodejsFunction(this, 'ProcessorFunction', { ... });
+new ApiGatewayToLambda(this, 'RestApi', { ... });
+new RequestValidator(this, 'RequestValidator', { ... });
+```
+
+### ❌ Wrong – Dynamic or non-PascalCase IDs
+
+```typescript
+// Uses environment/runtime values
+new NodejsFunction(this, `${stackName}-processor`, { ... });
+new ApiGatewayToLambda(this, `${Aws.ACCOUNT_ID}-RestApi`, { ... });
+
+// Inconsistent casing
+new NodejsFunction(this, 'processor', { ... });
+new RequestValidator(this, 'validator', { ... });
+```
+
 ## Avoid duplicating resource names in CDK constructs
 
 Never duplicate resource names when creating CDK constructs.  

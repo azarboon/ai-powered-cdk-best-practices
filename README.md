@@ -26,6 +26,9 @@ The boilerplate integrates agentic coders (here, Amazon Q CLI Developer) with AW
 
 <!-- implement these
 
+implement cdk best practices. continue from "Let the AWS CDK manage roles and security groups"
+https://docs.aws.amazon.com/cdk/v2/guide/best-practices.html
+
 add proper input validation and a unit test to ensure STACK_NAME has only valid values and dont break components
 write a sample unit test for a construct just for learning purposes
 

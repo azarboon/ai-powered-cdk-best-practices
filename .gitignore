@@ -158,8 +158,7 @@ credentials.json
 # =============================================================================
 # CDK build output and staging directories
 .cdk.staging/
-cdk.out/
-cdk.context.json
+cdk.out
 
 # CDK bootstrap artifacts
 bootstrap-template.yaml

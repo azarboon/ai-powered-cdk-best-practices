@@ -24,7 +24,6 @@ describe('Validate required inputs', () => {
       throw new Error('Expected buildConfig to throw error for missing env vars');
     } catch (error) {
       const errorMessage = (error as Error).message;
-      console.log('this is the errorMessage' + errorMessage);
       expect(errorMessage).toContain('Missing AWS_REGION');
       expect(errorMessage).toContain('Missing AWS_ACCOUNT_ID');
       expect(errorMessage).toContain('Missing ENVIRONMENT');
