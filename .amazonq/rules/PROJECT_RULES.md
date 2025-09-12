@@ -130,6 +130,39 @@ Never hardcode environment names (e.g., `dev`, `test`, `prod`) anywhere in the c
 
 Never hardcode component names in infrastructure code; instead, dynamically generate them by combining the stack name with a relevant suffix (e.g., {stackName}-topic for an SNS topic, {stackName}-processor for a Lambda function, or {stackName}-api for an API Gateway). This ensures consistent naming across environments, avoids resource name collisions, and supports maintainable, scalable deployments.
 
+## CDK grant methods for access control
+
+Use CDK grant methods (grantXxx()) whenever they exist, instead of writing inline IAM policies.Grants attach least-privilege, resource-scoped permissions and keep intent clear.
+
+- **Use grants first** – prefer resource.grantRead(), resource.grantWrite(), resource.grantPublish(), etc.
+- **Document exceptions** – if no grant exists or you need conditions not exposed by a grant, use a PolicyStatement with least-privilege scope and explain why.
+
+### Preferred – using grant methods
+
+```typescript
+// SNS Topic access
+snsTopic.grantPublish(lambdaFunction);
+lambdaFunction.addEnvironment('SNS_TOPIC_ARN', snsTopic.topicArn);
+
+// S3 Bucket access
+bucket.grantReadWrite(lambdaFunction);
+
+// DynamoDB Table access
+table.grantReadWriteData(lambdaFunction);
+```
+
+### Avoid – manual IAM when a grant exists
+
+```typescript
+// Avoid this if a grant method is available
+lambdaFunction.addToRolePolicy(
+  new PolicyStatement({
+    actions: ['sns:Publish'],
+    resources: [snsTopic.topicArn],
+  })
+);
+```
+
 ## CDK Construct ID Naming Rule
 
 All CDK construct IDs MUST be:

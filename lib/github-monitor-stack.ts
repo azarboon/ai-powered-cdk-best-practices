@@ -215,7 +215,7 @@ export interface GitHubMonitorStackProps extends StackProps {
 }
 
 function createProcessorFunction(scope: Construct, appConfig: AppConfig): NodejsFunction {
-  const processorFunction = new NodejsFunction(scope, `processor`, {
+  const processorFunction = new NodejsFunction(scope, appConfig.STACK_NAME, {
     runtime: Runtime.NODEJS_22_X,
     architecture: Architecture.ARM_64,
     handler: 'handler',
